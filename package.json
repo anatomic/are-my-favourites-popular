@@ -1,0 +1,35 @@
+{
+  "name": "are-my-favourites-popular",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.9.0",
+    "cookie-session": "^1.0.2",
+    "d3": "^3.4.13",
+    "express": "^4.9.8",
+    "flux": "^2.0.1",
+    "lodash": "^2.4.1",
+    "react": "^0.11.2",
+    "react-router": "^0.9.4",
+    "request": "^2.45.0",
+    "store2": "^2.1.6",
+    "webpack": "^1.4.8"
+  },
+  "devDependencies": {
+    "autoprefixer-loader": "^1.0.0",
+    "css-loader": "^0.9.0",
+    "file-loader": "^0.8.1",
+    "jsx-loader": "^0.11.2",
+    "sass-loader": "^0.2.0",
+    "style-loader": "^0.8.1",
+    "url-loader": "^0.5.5",
+    "webpack-dev-server": "^1.6.5"
+  }
+}
