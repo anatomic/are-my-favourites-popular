@@ -13,17 +13,19 @@ module.exports = {
     module: {
         loaders: [
             { test: /\.js$/, loader: 'jsx?harmony' },
-            { test: /\.scss$/, loader: 'style!css!sass!autoprefixer?browsers=last 2 versions' },
+            { test: /\.scss$/, loader: 'style!css!autoprefixer?browers=last 2 versions!sass?outputStyle=expanded' },
             { test: /\.(png|jpg|gif)$/, loader: 'url?limit=8912' }
         ]
     },
     resolve: {
-        extensions: ['', '.js', '.json', '.jsx']
+        extensions: ['', '.js', '.json', '.jsx', '.png', '.scss']
     }, 
     plugins: [
         new DefinePlugin({
+            SPOTIFY_SECRET: JSON.stringify(process.env.SPOTIFY_SECRET || '133544a42ef94dddb720c875752e0a63'),
             CLIENT_ID: JSON.stringify(process.env.CLIENT_ID || 'b644f355f49f4878bcdc373475838796'),
-            API_BASE: JSON.stringify('https://api.spotify.com/')
+            API_BASE: JSON.stringify('https://api.spotify.com/'),
+            DEV: JSON.stringify(process.env.NODE_ENV || true)
         })
     ]
 };

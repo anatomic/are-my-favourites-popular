@@ -1,0 +1,22 @@
+.domain{
+  fill:none;
+  stroke: #ededed;
+}
+
+.tick{
+  line{
+    stroke: #f3f3f3;
+  }
+
+  text {
+    font-family: Helvetica;
+    font-weight: 300;
+    font-size: 12px;
+    fill: #ccc;
+  }
+}
+
+.line-label {
+  font-size: 10px;
+  fill: #CCC;
+}
