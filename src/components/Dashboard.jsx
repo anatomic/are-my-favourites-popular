@@ -1,5 +1,11 @@
 import { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
+import { select } from 'd3-selection';
+import { rollup, sum, min, max, mean } from 'd3-array';
+import { scalePow, scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
+import { schemeCategory10 } from 'd3-scale-chromatic';
+import { axisBottom, axisLeft } from 'd3-axis';
+import { line, area, curveBasis } from 'd3-shape';
+import { timeWeek } from 'd3-time';
 import './graph.css';
 import './playlists.css';
 
@@ -12,7 +18,7 @@ function Dashboard({ tracks, onLogout }) {
     if (!tracks || !svgRef.current) return;
 
     // Clear previous chart
-    d3.select(svgRef.current).selectAll('*').remove();
+    select(svgRef.current).selectAll('*').remove();
 
     const sortedTracks = [...tracks].sort(
       (a, b) => new Date(a.added_at).getTime() - new Date(b.added_at).getTime()
@@ -21,13 +27,13 @@ function Dashboard({ tracks, onLogout }) {
     const container = svgRef.current;
 
     // Group tracks by week and calculate popularity metrics
-    const grouped = d3.rollup(
+    const grouped = rollup(
       sortedTracks,
       (leaves) => ({
-        total_popularity: d3.sum(leaves, (d) => d.track.popularity),
+        total_popularity: sum(leaves, (d) => d.track.popularity),
         total_tracks: leaves.length,
       }),
-      (d) => d3.timeWeek(new Date(d.added_at)).toISOString()
+      (d) => timeWeek(new Date(d.added_at)).toISOString()
     );
 
     // Convert to array and calculate cumulative values
@@ -36,55 +42,51 @@ function Dashboard({ tracks, onLogout }) {
       values,
     })).sort((a, b) => new Date(a.key) - new Date(b.key));
 
-    let sum = 0;
+    let runningSum = 0;
     let totalTracks = 0;
     cumulativePopularity.forEach((leaf) => {
-      sum += leaf.values.total_popularity;
+      runningSum += leaf.values.total_popularity;
       totalTracks += leaf.values.total_tracks;
-      leaf.values.cumulative_total = sum;
-      leaf.values.moving_mean = totalTracks && sum ? sum / totalTracks : sum;
+      leaf.values.cumulative_total = runningSum;
+      leaf.values.moving_mean = totalTracks && runningSum ? runningSum / totalTracks : runningSum;
       leaf.values.mean = leaf.values.total_popularity / leaf.values.total_tracks;
     });
 
     // Scales
-    const first = d3.min(sortedTracks, (d) => new Date(d.added_at));
-    const last = d3.max(sortedTracks, (d) => new Date(d.added_at));
+    const first = min(sortedTracks, (d) => new Date(d.added_at));
+    const last = max(sortedTracks, (d) => new Date(d.added_at));
 
-    const r = d3.scalePow().exponent(2).domain([0, 100]).range([1, 20]);
-    const x = d3.scaleTime().domain([first, last]).range([40, maxWidth]).nice();
-    const y = d3
-      .scaleLinear()
-      .domain([d3.max(sortedTracks, (d) => d.track.popularity) + 5, 0])
+    const r = scalePow().exponent(2).domain([0, 100]).range([1, 20]);
+    const x = scaleTime().domain([first, last]).range([40, maxWidth]).nice();
+    const y = scaleLinear()
+      .domain([max(sortedTracks, (d) => d.track.popularity) + 5, 0])
       .range([20, maxHeight]);
-    const col = d3.scaleOrdinal(d3.schemeCategory10);
+    const col = scaleOrdinal(schemeCategory10);
 
     // Axes
-    const xAxis = d3.axisBottom(x).ticks(d3.timeWeek.every(2));
-    const yAxis = d3.axisLeft(y);
+    const xAxis = axisBottom(x).ticks(timeWeek.every(2));
+    const yAxis = axisLeft(y);
 
-    const av = d3.mean(sortedTracks, (d) => d.track.popularity);
+    const av = mean(sortedTracks, (d) => d.track.popularity);
 
     // Line generators
-    const cumulativeLine = d3
-      .line()
-      .curve(d3.curveBasis)
+    const cumulativeLine = line()
+      .curve(curveBasis)
       .x((d) => x(new Date(d.key)))
       .y((d) => y(d.values.moving_mean));
 
-    const weeklyMeanLine = d3
-      .line()
-      .curve(d3.curveBasis)
+    const weeklyMeanLine = line()
+      .curve(curveBasis)
       .x((d) => x(new Date(d.key)))
       .y((d) => y(d.values.mean));
 
-    const cumulativeArea = d3
-      .area()
-      .curve(d3.curveBasis)
+    const cumulativeArea = area()
+      .curve(curveBasis)
       .x((d) => x(new Date(d.key)))
       .y1((d) => y(d.values.moving_mean))
       .y0(maxHeight);
 
-    const svg = d3.select(container);
+    const svg = select(container);
 
     // Draw cumulative area
     svg
@@ -140,7 +142,7 @@ function Dashboard({ tracks, onLogout }) {
       .enter()
       .append('circle')
       .attr('r', (d) => r(d.track.popularity))
-      .attr('cx', (d) => x(d3.timeWeek(new Date(d.added_at))))
+      .attr('cx', (d) => x(timeWeek(new Date(d.added_at))))
       .attr('cy', (d) => y(d.track.popularity))
       .attr('fill', (d, i) => col(i))
       .on('mousedown', function (event, d) {
