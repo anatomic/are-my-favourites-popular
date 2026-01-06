@@ -1,39 +1,28 @@
 {
   "name": "are-my-favourites-popular",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Visualize the popularity of your Spotify favourites over time",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "dev": "nodemon -i ./client index.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.9.0",
-    "cookie-session": "^1.0.2",
-    "d3": "^3.4.13",
-    "express": "^4.9.8",
-    "flux": "^2.0.1",
-    "lodash": "^2.4.1",
-    "react": "^0.11.2",
-    "react-router": "^0.9.4",
-    "request": "^2.45.0",
-    "reqwest": "^1.1.4",
-    "store2": "^2.1.6",
-    "webpack": "^1.4.8"
+    "d3-array": "^3.2.4",
+    "d3-axis": "^3.0.0",
+    "d3-scale": "^4.0.2",
+    "d3-scale-chromatic": "^3.1.0",
+    "d3-selection": "^3.0.0",
+    "d3-shape": "^3.2.0",
+    "d3-time": "^3.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "autoprefixer-loader": "^1.0.0",
-    "css-loader": "^0.9.0",
-    "file-loader": "^0.8.1",
-    "jsx-loader": "^0.11.2",
-    "nodemon": "^1.2.1",
-    "sass-loader": "^0.2.0",
-    "style-loader": "^0.8.1",
-    "url-loader": "^0.5.5",
-    "webpack-dev-middleware": "^1.0.11",
-    "webpack-dev-server": "^1.6.5"
+    "@vitejs/plugin-react": "^5.1.2",
+    "vite": "^5.4.21"
   }
 }
