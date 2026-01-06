@@ -2,7 +2,7 @@
 
 var React = require('react');
 var qs = require('querystring');
-var main = require('./main.scss');
+var main = require('./main.css');
 
 // var btn = require('./generic/btn.scss');
 

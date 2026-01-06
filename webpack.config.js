@@ -13,12 +13,12 @@ module.exports = {
     module: {
         loaders: [
             { test: /\.js$/, loader: 'jsx?harmony' },
-            { test: /\.scss$/, loader: 'style!css!autoprefixer?browers=last 2 versions!sass?outputStyle=expanded' },
+            { test: /\.css$/, loader: 'style!css!autoprefixer?browers=last 2 versions' },
             { test: /\.(png|jpg|gif)$/, loader: 'url?limit=8912' }
         ]
     },
     resolve: {
-        extensions: ['', '.js', '.json', '.jsx', '.png', '.scss']
+        extensions: ['', '.js', '.json', '.jsx', '.png', '.css']
     }, 
     plugins: [
         new DefinePlugin({

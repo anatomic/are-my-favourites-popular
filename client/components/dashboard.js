@@ -1,7 +1,7 @@
 /** @jsx React.DOM */
 
 var React = require('react');
-var main = require('./main.scss');
+var main = require('./main.css');
 var _ = require('lodash');
 var maxWidth = window.innerWidth - 100;
 var maxHeight = window.innerHeight - 200;
@@ -18,7 +18,7 @@ module.exports = React.createClass({
             require.ensure([], function() {
 
                 var d3 = require('d3');
-                var axis = require('./graph.scss');
+                var axis = require('./graph.css');
 
                 var first = d3.min(tracks, function(d) { return new Date(d.added_at) });
                 var last = d3.max(tracks, function(d) { return new Date(d.added_at) });
@@ -138,7 +138,7 @@ module.exports = React.createClass({
     },
 
     render: function() {
-        var playlists = require('./playlists.scss');
+        var playlists = require('./playlists.css');
         if (this.props.playlists) {
             var playlistGroups = _.compact(this.props.playlists.map(function(list, i, original) {
                 if (i % 5 === 0) {
