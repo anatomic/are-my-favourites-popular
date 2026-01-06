@@ -152,7 +152,9 @@ function App() {
       });
 
       if (!response.ok) {
-        throw { status: response.status, message: response.statusText };
+        const error = new Error(`Request failed with status ${response.status}: ${response.statusText}`);
+        error.status = response.status;
+        throw error;
       }
 
       const data = await response.json();
