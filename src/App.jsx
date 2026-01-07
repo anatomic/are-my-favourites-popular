@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import { exchangeCodeForToken, refreshAccessToken } from './auth';
+import { getSpotifyCache } from './cache';
 
 const API_BASE = 'https://api.spotify.com/';
+const spotifyCache = getSpotifyCache();
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -102,12 +104,16 @@ function App() {
     if (tokenData.refresh_token) {
       localStorage.setItem('refresh_token', tokenData.refresh_token);
     }
+    // Clear cached user ID to force re-fetch on next load
+    // This handles the case where someone re-authorizes with a different account
+    localStorage.removeItem('spotify_user_id');
   }
 
   function clearTokens() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('expires_at');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('spotify_user_id');
   }
 
   async function getValidAccessToken() {
@@ -124,10 +130,61 @@ function App() {
     return localStorage.getItem('access_token');
   }
 
+  async function getUserId() {
+    // Check if we have cached user ID
+    const cachedUserId = localStorage.getItem('spotify_user_id');
+    if (cachedUserId) {
+      return cachedUserId;
+    }
+
+    // Fetch user ID from Spotify API
+    const accessToken = await getValidAccessToken();
+    const response = await fetch(`${API_BASE}v1/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = new Error(`Failed to fetch user profile: ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+
+    const userData = await response.json();
+    const userId = userData.id;
+
+    // Cache the user ID
+    localStorage.setItem('spotify_user_id', userId);
+    return userId;
+  }
+
   async function loadTracks() {
     try {
+      // Initialize cache
+      await spotifyCache.init();
+
+      // Get user ID for cache scoping
+      const userId = await getUserId();
+
+      // Check if we have valid cached tracks
+      const cachedTracks = await spotifyCache.getCachedTracks(userId);
+      if (cachedTracks) {
+        setTracks(cachedTracks);
+
+        // Load artists (also uses caching)
+        const artists = await loadArtistGenres(cachedTracks);
+        setArtistMap(artists);
+        return;
+      }
+
+      // No valid cache, fetch from API
       const allTracks = await loadCollection(`${API_BASE}v1/me/tracks?offset=0&limit=50`);
       setTracks(allTracks);
+
+      // Cache the tracks
+      await spotifyCache.cacheTracks(userId, allTracks);
 
       // Fetch artist data for genre information
       const artists = await loadArtistGenres(allTracks);
@@ -150,27 +207,44 @@ function App() {
       tracks.flatMap(t => t.track.artists.map(a => a.id))
     )];
 
-    const artistData = new Map();
+    // Check which artists are already cached
+    const { cachedArtists, uncachedIds } = await spotifyCache.getCachedArtists(artistIds);
 
-    // Fetch in batches of 50 (Spotify API limit)
-    for (let i = 0; i < artistIds.length; i += 50) {
-      const batch = artistIds.slice(i, i + 50);
-      const accessToken = await getValidAccessToken();
-      const response = await fetch(
-        `${API_BASE}v1/artists?ids=${batch.join(',')}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
+    // Start with cached artists
+    const artistData = new Map(cachedArtists);
+
+    // Only fetch uncached artists from API
+    if (uncachedIds.length > 0) {
+      const fetchedArtists = [];
+
+      // Fetch in batches of 50 (Spotify API limit)
+      for (let i = 0; i < uncachedIds.length; i += 50) {
+        const batch = uncachedIds.slice(i, i + 50);
+        const accessToken = await getValidAccessToken();
+        const response = await fetch(
+          `${API_BASE}v1/artists?ids=${batch.join(',')}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          data.artists.forEach(a => {
+            if (a) {
+              artistData.set(a.id, a);
+              fetchedArtists.push(a);
+            }
+          });
         }
-      );
+      }
 
-      if (response.ok) {
-        const data = await response.json();
-        data.artists.forEach(a => {
-          if (a) artistData.set(a.id, a);
-        });
+      // Cache the newly fetched artists
+      if (fetchedArtists.length > 0) {
+        await spotifyCache.cacheArtists(fetchedArtists);
       }
     }
 
@@ -206,10 +280,28 @@ function App() {
     return collection;
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Clear user's track cache (keep artist cache - shared across users)
+    const userId = localStorage.getItem('spotify_user_id');
+    if (userId) {
+      try {
+        await spotifyCache.invalidateUserCache(userId);
+      } catch (err) {
+        console.warn('Failed to invalidate user cache during logout:', err);
+      }
+    } else {
+      // No userId found - clear all track caches to be safe
+      try {
+        await spotifyCache.clearAllCaches();
+      } catch (err) {
+        console.warn('Failed to clear caches during logout:', err);
+      }
+    }
+
     clearTokens();
     setIsAuthenticated(false);
     setTracks(null);
+    setArtistMap(null);
     setError(null);
     window.location.href = window.location.origin;
   }
