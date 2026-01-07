@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { select } from 'd3-selection';
 import { rollup, sum, min, max, mean } from 'd3-array';
 import { scalePow, scaleTime, scaleLinear } from 'd3-scale';
@@ -7,6 +7,8 @@ import { line, curveBasis } from 'd3-shape';
 import { timeWeek, timeMonth, timeYear } from 'd3-time';
 import { interpolateRgb } from 'd3-interpolate';
 import Stats from './Stats';
+import Player from './Player';
+import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer';
 import './dashboard.css';
 import './graph.css';
 
@@ -26,9 +28,10 @@ const COLORS = {
   grid: 'rgba(255, 255, 255, 0.06)',
 };
 
-function Dashboard({ tracks, artistMap, onLogout }) {
+function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
+  const previewAudioRef = useRef(null);
   const [bucket, setBucket] = useState('year');
   const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1400) : 800;
   const maxHeight = typeof window !== 'undefined' ? Math.min(window.innerHeight - 280, 500) : 400;
@@ -37,6 +40,43 @@ function Dashboard({ tracks, artistMap, onLogout }) {
   const margin = { top: 40, right: 30, bottom: 50, left: 60 };
   const chartWidth = maxWidth - margin.left - margin.right;
   const chartHeight = maxHeight - margin.top - margin.bottom;
+
+  // Spotify Web Playback SDK
+  const player = useSpotifyPlayer(getAccessToken);
+
+  // Play a track - use SDK for Premium, preview for others
+  const playTrack = useCallback(async (track) => {
+    // Stop any existing preview audio
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+
+    // Try SDK playback for Premium users
+    if (player.isReady && player.isPremium && player.deviceId) {
+      const trackUri = `spotify:track:${track.id}`;
+      const success = await player.play(trackUri);
+
+      // If SDK playback failed, fall back to preview
+      if (!success && track.preview_url) {
+        console.log('SDK playback failed, falling back to preview');
+        previewAudioRef.current = new Audio(track.preview_url);
+        previewAudioRef.current.play();
+      }
+    } else if (track.preview_url) {
+      // Fallback to preview for non-Premium or if SDK not ready
+      previewAudioRef.current = new Audio(track.preview_url);
+      previewAudioRef.current.play();
+    }
+  }, [player]);
+
+  // Stop preview audio
+  const stopPreview = useCallback(() => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!tracks || !svgRef.current) return;
@@ -197,18 +237,9 @@ function Dashboard({ tracks, artistMap, onLogout }) {
       .attr('stroke', 'rgba(0,0,0,0.2)')
       .attr('stroke-width', 0.5)
       .style('cursor', 'pointer')
-      .on('mousedown', function (event, d) {
-        select(this).attr('opacity', 1).attr('stroke', '#fff').attr('stroke-width', 2);
-        if (d.track.preview_url) {
-          d.audio = new Audio(d.track.preview_url);
-          d.audio.play();
-        }
-      })
-      .on('mouseup', function (event, d) {
-        select(this).attr('opacity', 0.75).attr('stroke', 'rgba(0,0,0,0.2)').attr('stroke-width', 0.5);
-        if (d.audio) {
-          d.audio.pause();
-        }
+      .on('click', function (event, d) {
+        // Play track via SDK or preview
+        playTrack(d.track);
       })
       .on('mouseover', function (event, d) {
         select(this)
@@ -299,7 +330,7 @@ function Dashboard({ tracks, artistMap, onLogout }) {
       .attr('class', 'legend-label')
       .text(`Average: ${av.toFixed(0)}`);
 
-  }, [tracks, maxWidth, maxHeight, bucket, margin.left, margin.right, margin.top, margin.bottom, chartWidth, chartHeight]);
+  }, [tracks, maxWidth, maxHeight, bucket, margin.left, margin.right, margin.top, margin.bottom, chartWidth, chartHeight, playTrack]);
 
   return (
     <div className="dashboard">
@@ -341,6 +372,22 @@ function Dashboard({ tracks, artistMap, onLogout }) {
           <p>Loading your tracks...</p>
         </div>
       )}
+
+      {/* Playback Widget */}
+      <Player
+        isReady={player.isReady}
+        isPremium={player.isPremium}
+        currentTrack={player.currentTrack}
+        isPlaying={player.isPlaying}
+        position={player.position}
+        duration={player.duration}
+        error={player.error}
+        onTogglePlay={player.togglePlay}
+        onSeek={player.seek}
+        onPrevious={player.previousTrack}
+        onNext={player.nextTrack}
+        onVolumeChange={player.setVolume}
+      />
 
       {tracks && <Stats tracks={tracks} artistMap={artistMap} />}
 

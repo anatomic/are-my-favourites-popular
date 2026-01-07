@@ -18,6 +18,14 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    // Stub for Spotify SDK - will be called when SDK is ready
+    // React will check window.Spotify to know if SDK is already loaded
+    window.onSpotifyWebPlaybackSDKReady = function() {
+      window.spotifySDKReady = true;
+    };
+  </script>
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

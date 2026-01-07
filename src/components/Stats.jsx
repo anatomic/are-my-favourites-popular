@@ -20,14 +20,17 @@ function Stats({ tracks, artistMap }) {
   const topArtists = useMemo(() => {
     const counts = {};
     tracks.forEach(t => {
+      const year = new Date(t.added_at).getFullYear();
       t.track.artists.forEach(a => {
         if (!counts[a.id]) {
-          counts[a.id] = { id: a.id, name: a.name, count: 0 };
+          counts[a.id] = { id: a.id, name: a.name, count: 0, years: new Set() };
         }
         counts[a.id].count++;
+        counts[a.id].years.add(year);
       });
     });
     return Object.values(counts)
+      .map(a => ({ ...a, years: [...a.years].sort((x, y) => x - y) }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
   }, [tracks]);
@@ -38,15 +41,17 @@ function Stats({ tracks, artistMap }) {
 
     const stats = {};
     tracks.forEach(t => {
+      const year = new Date(t.added_at).getFullYear();
       t.track.artists.forEach(a => {
         const artist = artistMap.get(a.id);
         if (artist?.genres) {
           artist.genres.forEach(genre => {
             if (!stats[genre]) {
-              stats[genre] = { count: 0, totalPop: 0 };
+              stats[genre] = { count: 0, totalPop: 0, years: new Set() };
             }
             stats[genre].count++;
             stats[genre].totalPop += t.track.popularity;
+            stats[genre].years.add(year);
           });
         }
       });
@@ -57,6 +62,7 @@ function Stats({ tracks, artistMap }) {
         genre,
         count: data.count,
         avgPopularity: Math.round(data.totalPop / data.count),
+        years: [...data.years].sort((x, y) => x - y),
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
@@ -142,14 +148,19 @@ function Stats({ tracks, artistMap }) {
           <ol className="stats-list stats-list--numbered">
             {topArtists.map((artist) => (
               <li key={artist.id}>
-                <a
-                  href={`https://open.spotify.com/artist/${artist.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="stats-link stats-name"
-                >
-                  {artist.name}
-                </a>
+                <span className="stats-track">
+                  <a
+                    href={`https://open.spotify.com/artist/${artist.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="stats-link"
+                  >
+                    <strong>{artist.name}</strong>
+                  </a>
+                  <span className="stats-artist">
+                    ({artist.years.join(', ')})
+                  </span>
+                </span>
                 <span className="stats-value">{artist.count} track{artist.count !== 1 ? 's' : ''}</span>
               </li>
             ))}
@@ -163,7 +174,12 @@ function Stats({ tracks, artistMap }) {
             <ol className="stats-list stats-list--numbered">
               {genreStats.map((g, i) => (
                 <li key={i}>
-                  <span className="stats-name">{g.genre}</span>
+                  <span className="stats-track">
+                    <strong>{g.genre}</strong>
+                    <span className="stats-artist">
+                      ({g.years.join(', ')})
+                    </span>
+                  </span>
                   <span className="stats-value">
                     {g.count} track{g.count !== 1 ? 's' : ''} · avg {g.avgPopularity}
                   </span>

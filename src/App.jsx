@@ -239,7 +239,7 @@ function App() {
     return <Login />;
   }
 
-  return <Dashboard tracks={tracks} artistMap={artistMap} onLogout={handleLogout} />;
+  return <Dashboard tracks={tracks} artistMap={artistMap} onLogout={handleLogout} getAccessToken={getValidAccessToken} />;
 }
 
 export default App;

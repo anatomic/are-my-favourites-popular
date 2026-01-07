@@ -21,7 +21,7 @@ function Login() {
       client_id: CLIENT_ID,
       response_type: 'code',
       redirect_uri: window.location.origin + window.location.pathname,
-      scope: 'user-read-private user-library-read playlist-read-private',
+      scope: 'user-read-private user-library-read playlist-read-private streaming user-read-playback-state user-modify-playback-state',
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
       show_dialog: 'true',
