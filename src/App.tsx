@@ -125,6 +125,7 @@ function App() {
   async function getValidAccessToken(): Promise<string> {
     const expiresAt = localStorage.getItem('expires_at');
     const refreshToken = localStorage.getItem('refresh_token');
+    const accessToken = localStorage.getItem('access_token');
 
     // If token expires in less than 1 minute, refresh it
     if (expiresAt && parseInt(expiresAt) < Date.now() + 60 * 1000 && refreshToken) {
@@ -133,10 +134,27 @@ function App() {
       return tokenData.access_token;
     }
 
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) {
-      throw new Error('No access token available');
+    // If no access token but we have a refresh token, try to refresh
+    if (!accessToken && refreshToken) {
+      try {
+        const tokenData = await refreshAccessToken(refreshToken);
+        saveTokens(tokenData);
+        return tokenData.access_token;
+      } catch {
+        // Refresh failed - treat as auth failure
+        const error: ApiError = new Error('Session expired. Please log in again.');
+        error.status = 401;
+        throw error;
+      }
     }
+
+    // No access token and no refresh token - auth failure
+    if (!accessToken) {
+      const error: ApiError = new Error('No access token available. Please log in.');
+      error.status = 401;
+      throw error;
+    }
+
     return accessToken;
   }
 
