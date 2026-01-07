@@ -25,6 +25,7 @@ transition;
 // Animation timing configuration
 const TRANSITION_DURATION = 600;
 const MAX_STAGGER_DELAY = 1000; // Cap total stagger time for large datasets
+const STAGGER_PER_ITEM = 2; // Milliseconds delay per item for deterministic staggering
 const MIN_RADIUS = 2; // Starting radius for animation
 
 type SVGSelection = Selection<SVGSVGElement, unknown, null, undefined>;
@@ -258,8 +259,9 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
 
   // Animate entering elements (only stagger on first render)
   if (isFirstRender) {
-    entering.each(function (this: SVGCircleElement, d: SavedTrack) {
-      const delay = Math.random() * MAX_STAGGER_DELAY;
+    entering.each(function (this: SVGCircleElement, d: SavedTrack, i: number) {
+      // Deterministic stagger based on index, capped at MAX_STAGGER_DELAY
+      const delay = Math.min(i * STAGGER_PER_ITEM, MAX_STAGGER_DELAY);
       select(this)
         .transition()
         .duration(TRANSITION_DURATION)
@@ -288,50 +290,12 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
 }
 
 /**
- * Render the legend
+ * Escape HTML to prevent XSS vulnerabilities
  */
-export function renderLegend(svg: SVGSelection, config: ChartConfig): void {
-  const { dimensions } = config;
-  const { width, margins } = dimensions;
-
-  const legendX = width - margins.right - 170;
-  const legendY = margins.top;
-
-  const legend = svg
-    .append("g")
-    .attr("class", "legend")
-    .attr("transform", `translate(${legendX}, ${legendY})`);
-
-  // Legend background
-  legend
-    .append("rect")
-    .attr("x", -12)
-    .attr("y", -12)
-    .attr("width", 150)
-    .attr("height", 64)
-    .attr("fill", "rgba(18, 18, 18, 0.9)")
-    .attr("rx", 8);
-
-  // Gradient bar
-  const gradientBar = legend.append("g").attr("transform", "translate(0, 0)");
-  gradientBar
-    .append("rect")
-    .attr("width", 12)
-    .attr("height", 40)
-    .attr("fill", "url(#popularityGradient)")
-    .attr("rx", 2);
-  gradientBar
-    .append("text")
-    .attr("x", 18)
-    .attr("y", 8)
-    .attr("class", "legend-label")
-    .text("High popularity");
-  gradientBar
-    .append("text")
-    .attr("x", 18)
-    .attr("y", 38)
-    .attr("class", "legend-label")
-    .text("Low popularity");
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 /**
@@ -343,13 +307,20 @@ export function createTooltipContent(
 ): string {
   const addedDate = new Date(track.added_at).toLocaleDateString();
 
+  // Escape all user-provided content to prevent XSS
+  const trackName = escapeHtml(track.track.name);
+  const artistNames = escapeHtml(track.track.artists.map((a) => a.name).join(", "));
+  const albumName = escapeHtml(track.track.album.name);
+  // Escape color value in case it's manipulated
+  const safeColor = escapeHtml(popColor);
+
   return `
-    <strong>${track.track.name}</strong>
-    <span class="tooltip-artist">${track.track.artists.map((a) => a.name).join(", ")}</span>
-    <span class="tooltip-album">${track.track.album.name}</span>
+    <strong>${trackName}</strong>
+    <span class="tooltip-artist">${artistNames}</span>
+    <span class="tooltip-album">${albumName}</span>
     <span class="tooltip-stat">
       <span class="tooltip-label">Popularity</span>
-      <span class="tooltip-value" style="color: ${popColor}">${track.track.popularity}</span>
+      <span class="tooltip-value" style="color: ${safeColor}">${track.track.popularity}</span>
     </span>
     <span class="tooltip-stat">
       <span class="tooltip-label">Added</span>

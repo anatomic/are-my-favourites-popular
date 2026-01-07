@@ -51,6 +51,16 @@ const DEFAULT_MARGINS: ChartMargins = {
   left: 60,
 };
 
+// Container measurement constants
+const CHART_ASPECT_RATIO = 0.42; // Height as ratio of width
+const MIN_CHART_HEIGHT = 300;
+const MAX_CHART_HEIGHT = 525;
+const MAX_MEASUREMENT_RETRIES = 10; // Prevent infinite retry loop
+
+// Time scale constants
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
+const X_AXIS_FUTURE_MONTHS = 6; // How many months to extend X axis into the future
+
 /**
  * Hook to track container size using ResizeObserver
  * Returns responsive dimensions for the chart, or null until measured
@@ -65,16 +75,25 @@ export function useContainerSize(
     if (!container) return;
 
     let rafId: number;
+    let retryCount = 0;
 
     // Measurement function - retries on next frame if container not yet laid out
     const measure = (): void => {
       const rect = container.getBoundingClientRect();
       if (rect.width > 0) {
-        const height = Math.min(Math.max(rect.width * 0.42, 300), 525);
+        const height = Math.min(
+          Math.max(rect.width * CHART_ASPECT_RATIO, MIN_CHART_HEIGHT),
+          MAX_CHART_HEIGHT
+        );
         setSize({ width: rect.width, height });
-      } else {
+      } else if (retryCount < MAX_MEASUREMENT_RETRIES) {
         // Container not yet sized (flexbox/grid timing), retry next frame
+        retryCount++;
         rafId = requestAnimationFrame(measure);
+      } else {
+        // Fallback: use default dimensions after max retries
+        console.warn('Chart container measurement failed after max retries, using fallback dimensions');
+        setSize({ width: 800, height: 400 });
       }
     };
 
@@ -89,7 +108,10 @@ export function useContainerSize(
         if (entry) {
           const { width } = entry.contentRect;
           if (width > 0) {
-            const height = Math.min(Math.max(width * 0.42, 300), 525);
+            const height = Math.min(
+              Math.max(width * CHART_ASPECT_RATIO, MIN_CHART_HEIGHT),
+              MAX_CHART_HEIGHT
+            );
             setSize({ width, height });
           }
         }
@@ -178,11 +200,10 @@ export function useChartConfig(
     const maxPopularity = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
 
     // Create scales - start 1 week before first track, end 6 months after today
-    const xPaddingStart = 7 * 24 * 60 * 60 * 1000; // 1 week in ms
-    const xEnd = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()); // 6 months from now
+    const xEnd = new Date(today.getFullYear(), today.getMonth() + X_AXIS_FUTURE_MONTHS, today.getDate());
     const x = scaleTime()
       .domain([
-        new Date((firstDate ?? today).getTime() - xPaddingStart),
+        new Date((firstDate ?? today).getTime() - ONE_WEEK_MS),
         xEnd
       ])
       .range([margins.left, width - margins.right]);

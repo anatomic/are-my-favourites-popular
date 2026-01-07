@@ -113,6 +113,21 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
     }
   }, [chartConfig]);
 
+  // Set up event handlers once - only when handlers change
+  useEffect(() => {
+    if (!chartConfig || !svgRef.current) return;
+
+    const svg = select(svgRef.current);
+
+    // Set up event delegation on data points container (3 handlers total, not N*3)
+    // This uses event bubbling so we don't need to reattach handlers to each circle
+    setupDataPointHandlers(svg, chartConfig, {
+      onClick: playTrack,
+      onMouseOver: handleMouseOver,
+      onMouseOut: handleMouseOut,
+    });
+  }, [playTrack, handleMouseOver, handleMouseOut, chartConfig]);
+
   // Render the D3 chart with modern join() pattern
   // Only clears on first render; subsequent renders animate changes
   useEffect(() => {
@@ -128,14 +143,6 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       renderGradientDef(svg);
     }
 
-    // Set up event delegation on data points container (3 handlers total, not N*3)
-    // This uses event bubbling so we don't need to reattach handlers to each circle
-    setupDataPointHandlers(svg, chartConfig, {
-      onClick: playTrack,
-      onMouseOver: handleMouseOver,
-      onMouseOut: handleMouseOut,
-    });
-
     // Clear and re-render structural elements (axes, grid)
     // These appear instantly without animation
     svg.selectAll('.grid-line, .x-axis, .y-axis, .axis-label').remove();
@@ -150,17 +157,20 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       // First render: animate from bottom with stagger
       animatingRef.current = true;
       renderDataPoints(svg, chartConfig);
-      // Allow updates after animation completes (600ms transition + 2000ms max stagger)
-      setTimeout(() => {
+      // Allow updates after animation completes (600ms transition + 1000ms max stagger)
+      const timeoutId = setTimeout(() => {
         animatingRef.current = false;
-      }, 2600);
+      }, 1600);
+
+      // Cleanup timeout on unmount or config change
+      return () => clearTimeout(timeoutId);
     } else if (!animatingRef.current) {
       // Subsequent renders: smooth transitions (only if not currently animating)
       renderDataPoints(svg, chartConfig);
     }
     // If animating, skip data point update to prevent transition interruption
 
-  }, [chartConfig, playTrack, handleMouseOver, handleMouseOut]);
+  }, [chartConfig]);
 
   return (
     <div className="dashboard">
