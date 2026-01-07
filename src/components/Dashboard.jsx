@@ -1,18 +1,29 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { select } from 'd3-selection';
 import { rollup, sum, min, max, mean } from 'd3-array';
 import { scalePow, scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { schemeCategory10 } from 'd3-scale-chromatic';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { line, area, curveBasis } from 'd3-shape';
-import { timeWeek } from 'd3-time';
+import { timeWeek, timeMonth, timeYear } from 'd3-time';
 import './graph.css';
 import './playlists.css';
 
 function Dashboard({ tracks, onLogout }) {
   const svgRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const [bucket, setBucket] = useState('month');
   const maxWidth = typeof window !== 'undefined' ? window.innerWidth - 100 : 800;
   const maxHeight = typeof window !== 'undefined' ? window.innerHeight - 200 : 400;
+
+  const getTimeInterval = (b) => {
+    switch (b) {
+      case 'week': return timeWeek;
+      case 'month': return timeMonth;
+      case 'year': return timeYear;
+      default: return timeMonth;
+    }
+  };
 
   useEffect(() => {
     if (!tracks || !svgRef.current) return;
@@ -26,14 +37,15 @@ function Dashboard({ tracks, onLogout }) {
 
     const container = svgRef.current;
 
-    // Group tracks by week and calculate popularity metrics
+    // Group tracks by selected time interval and calculate popularity metrics
+    const timeInterval = getTimeInterval(bucket);
     const grouped = rollup(
       sortedTracks,
       (leaves) => ({
         total_popularity: sum(leaves, (d) => d.track.popularity),
         total_tracks: leaves.length,
       }),
-      (d) => timeWeek(new Date(d.added_at)).toISOString()
+      (d) => timeInterval(new Date(d.added_at)).toISOString()
     );
 
     // Convert to array and calculate cumulative values
@@ -63,8 +75,11 @@ function Dashboard({ tracks, onLogout }) {
       .range([20, maxHeight]);
     const col = scaleOrdinal(schemeCategory10);
 
-    // Axes
-    const xAxis = axisBottom(x).ticks(timeWeek.every(2));
+    // Axes - adjust tick frequency based on bucket
+    const tickInterval = bucket === 'week' ? timeWeek.every(2)
+      : bucket === 'month' ? timeMonth.every(1)
+      : timeYear.every(1);
+    const xAxis = axisBottom(x).ticks(tickInterval);
     const yAxis = axisLeft(y);
 
     const av = mean(sortedTracks, (d) => d.track.popularity);
@@ -142,9 +157,10 @@ function Dashboard({ tracks, onLogout }) {
       .enter()
       .append('circle')
       .attr('r', (d) => r(d.track.popularity))
-      .attr('cx', (d) => x(timeWeek(new Date(d.added_at))))
+      .attr('cx', (d) => x(new Date(d.added_at)))
       .attr('cy', (d) => y(d.track.popularity))
       .attr('fill', (d, i) => col(i))
+      .style('cursor', 'pointer')
       .on('mousedown', function (event, d) {
         if (d.track.preview_url) {
           d.audio = new Audio(d.track.preview_url);
@@ -156,8 +172,28 @@ function Dashboard({ tracks, onLogout }) {
           d.audio.pause();
         }
       })
-      .append('title')
-      .text((d) => `${d.track.artists[0].name} - ${d.track.name}`);
+      .on('mouseover', function (event, d) {
+        const tooltip = tooltipRef.current;
+        if (tooltip) {
+          const addedDate = new Date(d.added_at).toLocaleDateString();
+          tooltip.innerHTML = `
+            <strong>${d.track.name}</strong><br/>
+            ${d.track.artists.map(a => a.name).join(', ')}<br/>
+            <em>${d.track.album.name}</em><br/>
+            Popularity: ${d.track.popularity}<br/>
+            Added: ${addedDate}
+          `;
+          tooltip.style.opacity = '1';
+          tooltip.style.left = `${event.pageX + 10}px`;
+          tooltip.style.top = `${event.pageY - 10}px`;
+        }
+      })
+      .on('mouseout', function () {
+        const tooltip = tooltipRef.current;
+        if (tooltip) {
+          tooltip.style.opacity = '0';
+        }
+      });
 
     // Average line
     svg
@@ -177,14 +213,36 @@ function Dashboard({ tracks, onLogout }) {
       .attr('dy', -4)
       .attr('class', 'line-label')
       .text(`Average popularity: ${av.toFixed(2)}`);
-  }, [tracks, maxWidth, maxHeight]);
+  }, [tracks, maxWidth, maxHeight, bucket]);
 
   return (
     <div>
       <h1>Are my favourites popular?</h1>
+      <div className="bucket-controls">
+        <span>Group by: </span>
+        <button
+          onClick={() => setBucket('week')}
+          className={`btn btn--bucket ${bucket === 'week' ? 'btn--active' : ''}`}
+        >
+          Week
+        </button>
+        <button
+          onClick={() => setBucket('month')}
+          className={`btn btn--bucket ${bucket === 'month' ? 'btn--active' : ''}`}
+        >
+          Month
+        </button>
+        <button
+          onClick={() => setBucket('year')}
+          className={`btn btn--bucket ${bucket === 'year' ? 'btn--active' : ''}`}
+        >
+          Year
+        </button>
+      </div>
       {tracks ? (
-        <div>
+        <div style={{ position: 'relative' }}>
           <svg ref={svgRef} width="100%" height={maxHeight + 50}></svg>
+          <div ref={tooltipRef} className="tooltip"></div>
         </div>
       ) : (
         <div>Loading Tracks</div>
