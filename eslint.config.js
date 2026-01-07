@@ -4,6 +4,7 @@ import tsparser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import prettierConfig from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   // Global ignores - must be separate object without 'files'
@@ -12,8 +13,9 @@ export default [
       'dist/**',
       'node_modules/**',
       'coverage/**',
-      '*.config.js',
-      '*.config.ts',
+      'eslint.config.js',
+      'vite.config.js',
+      'vitest.config.ts',
     ],
   },
   js.configs.recommended,
@@ -29,67 +31,18 @@ export default [
         },
       },
       globals: {
-        // Window and document
-        window: 'readonly',
-        document: 'readonly',
-        navigator: 'readonly',
-        console: 'readonly',
-        // Timers
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        requestAnimationFrame: 'readonly',
-        cancelAnimationFrame: 'readonly',
-        // Storage
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        // Network
-        fetch: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        Request: 'readonly',
-        Response: 'readonly',
-        Headers: 'readonly',
-        // DOM types
-        HTMLElement: 'readonly',
-        HTMLDivElement: 'readonly',
-        SVGElement: 'readonly',
-        SVGSVGElement: 'readonly',
-        SVGGElement: 'readonly',
-        SVGLineElement: 'readonly',
-        SVGCircleElement: 'readonly',
-        Element: 'readonly',
-        Event: 'readonly',
-        MouseEvent: 'readonly',
-        MutationObserver: 'readonly',
-        ResizeObserver: 'readonly',
-        ResizeObserverCallback: 'readonly',
-        ResizeObserverEntry: 'readonly',
-        // Other browser APIs
-        Audio: 'readonly',
-        crypto: 'readonly',
-        btoa: 'readonly',
-        atob: 'readonly',
-        getComputedStyle: 'readonly',
-        // TypeScript/Fetch types
-        RequestInit: 'readonly',
-        // Encoding
-        TextEncoder: 'readonly',
-        TextDecoder: 'readonly',
-        // IndexedDB
-        indexedDB: 'readonly',
-        IDBDatabase: 'readonly',
+        ...globals.browser,
+        ...globals.es2021,
+        // TypeScript DOM types not in globals.browser
         IDBValidKey: 'readonly',
-        // Node.js (for config files)
-        process: 'readonly',
-        // React types
+        RequestInit: 'readonly',
+        ResizeObserverCallback: 'readonly',
         React: 'readonly',
       },
     },
     plugins: {
       '@typescript-eslint': tseslint,
-      react: react,
+      react,
       'react-hooks': reactHooks,
     },
     rules: {
