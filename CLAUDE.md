@@ -42,3 +42,37 @@ CLIENT_ID=your_client_id npm run dev
 ```
 
 Required Spotify scopes: `user-read-private`, `user-library-read`, `playlist-read-private`
+
+## Spotify Design Guidelines Compliance
+
+This app follows [Spotify's Design Guidelines](https://developer.spotify.com/documentation/design).
+
+### Requirements We Follow
+
+**Linking to Spotify**
+- All track names link to `https://open.spotify.com/track/{id}`
+- All artist names link to `https://open.spotify.com/artist/{id}`
+- Links open in new tab with `rel="noopener noreferrer"`
+
+**Metadata Display**
+- Track/artist names displayed exactly as provided by Spotify API
+- Names truncated with ellipsis when space-constrained (full name accessible on hover)
+- Maximum 20 items per content list (Spotify's limit)
+
+**Content Attribution**
+- App displays user's own saved library data
+- No Spotify logo required for personal data visualization (not a partner integration)
+
+**Playback**
+- Audio previews (15-30 sec) via track's `preview_url`
+- Play on mousedown, pause on mouseup (no seek/skip controls)
+
+### Color Usage
+- Spotify Green (`#1DB954`) used for hover states on Spotify links
+- Maintains high contrast for accessibility
+
+### What We Don't Do
+- No Spotify logo usage (would require approval)
+- No playlist/album artwork display
+- No streaming playback (only previews)
+- App name doesn't include "Spotify"
