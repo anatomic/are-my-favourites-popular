@@ -1,17 +1,13 @@
 import { useMemo } from 'react';
-import { rollup } from 'd3-array';
-import { timeWeek, timeMonth, timeYear } from 'd3-time';
 import './stats.css';
 
-function Stats({ tracks, artistMap, bucket }) {
-  const timeInterval = useMemo(() => {
-    switch (bucket) {
-      case 'week': return timeWeek;
-      case 'month': return timeMonth;
-      case 'year': return timeYear;
-      default: return timeMonth;
-    }
-  }, [bucket]);
+// Spotify secondary brand colors for highlights
+const HIGHLIGHT_COLORS = {
+  busiest: '#FF9E95',    // Coral - most tracks added
+  popular: '#6900BA',    // Purple - highest avg popularity
+};
+
+function Stats({ tracks, artistMap }) {
 
   // Top 20 most popular songs
   const top20Popular = useMemo(() => {
@@ -66,25 +62,6 @@ function Stats({ tracks, artistMap, bucket }) {
       .slice(0, 20);
   }, [tracks, artistMap]);
 
-  // Top 20 time buckets by volume
-  const topBuckets = useMemo(() => {
-    const grouped = rollup(
-      tracks,
-      (leaves) => leaves.length,
-      (d) => timeInterval(new Date(d.added_at)).toISOString()
-    );
-
-    const bucketLabel = bucket === 'week' ? 'Week of' : bucket === 'month' ? 'Month of' : 'Year';
-
-    return Array.from(grouped, ([key, count]) => ({
-      date: new Date(key),
-      count,
-      label: bucketLabel,
-    }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 20);
-  }, [tracks, timeInterval, bucket]);
-
   // Yearly summary - totals and avg popularity by year (ascending)
   const yearlySummary = useMemo(() => {
     const byYear = {};
@@ -97,24 +74,25 @@ function Stats({ tracks, artistMap, bucket }) {
       byYear[year].totalPop += t.track.popularity;
     });
 
-    return Object.entries(byYear)
+    const years = Object.entries(byYear)
       .map(([year, data]) => ({
         year: parseInt(year),
         count: data.count,
         avgPopularity: Math.round(data.totalPop / data.count),
       }))
       .sort((a, b) => a.year - b.year);
-  }, [tracks]);
 
-  const formatDate = (date) => {
-    if (bucket === 'year') {
-      return date.getFullYear().toString();
-    } else if (bucket === 'month') {
-      return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
-    } else {
-      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-  };
+    // Calculate top 3 by count and by popularity
+    const sortedByCount = [...years].sort((a, b) => b.count - a.count);
+    const sortedByPop = [...years].sort((a, b) => b.avgPopularity - a.avgPopularity);
+
+    // Add ranking info to each year
+    return years.map(y => ({
+      ...y,
+      countRank: sortedByCount.findIndex(s => s.year === y.year) + 1,
+      popRank: sortedByPop.findIndex(s => s.year === y.year) + 1,
+    }));
+  }, [tracks]);
 
   return (
     <div className="stats">
@@ -197,18 +175,6 @@ function Stats({ tracks, artistMap, bucket }) {
           )}
         </div>
 
-        {/* Top Time Buckets */}
-        <div className="stats-section">
-          <h3>Top 20 Busiest Periods</h3>
-          <ol className="stats-list stats-list--numbered">
-            {topBuckets.map((b, i) => (
-              <li key={i}>
-                <span className="stats-name">{formatDate(b.date)}</span>
-                <span className="stats-value">{b.count} track{b.count !== 1 ? 's' : ''}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
       </div>
 
       {/* Yearly Summary */}
@@ -228,17 +194,45 @@ function Stats({ tracks, artistMap, bucket }) {
               <tr>
                 <td className="stats-yearly-label">Tracks Added</td>
                 {yearlySummary.map(y => (
-                  <td key={y.year}>{y.count}</td>
+                  <td key={y.year} className={y.countRank <= 3 ? 'highlight-count' : ''}>
+                    {y.count}
+                    {y.countRank <= 3 && (
+                      <span
+                        className="indicator indicator--count"
+                        style={{ backgroundColor: HIGHLIGHT_COLORS.busiest }}
+                        title={`#${y.countRank} most tracks added`}
+                      />
+                    )}
+                  </td>
                 ))}
               </tr>
               <tr>
                 <td className="stats-yearly-label">Avg Popularity</td>
                 {yearlySummary.map(y => (
-                  <td key={y.year}>{y.avgPopularity}</td>
+                  <td key={y.year} className={y.popRank <= 3 ? 'highlight-pop' : ''}>
+                    {y.avgPopularity}
+                    {y.popRank <= 3 && (
+                      <span
+                        className="indicator indicator--pop"
+                        style={{ backgroundColor: HIGHLIGHT_COLORS.popular }}
+                        title={`#${y.popRank} highest avg popularity`}
+                      />
+                    )}
+                  </td>
                 ))}
               </tr>
             </tbody>
           </table>
+          <div className="stats-yearly-legend">
+            <span className="legend-item">
+              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.busiest }} />
+              Most tracks added
+            </span>
+            <span className="legend-item">
+              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.popular }} />
+              Highest avg popularity
+            </span>
+          </div>
         </div>
       </div>
     </div>

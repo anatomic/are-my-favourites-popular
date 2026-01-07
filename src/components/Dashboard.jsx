@@ -29,7 +29,7 @@ const COLORS = {
 function Dashboard({ tracks, artistMap, onLogout }) {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
-  const [bucket, setBucket] = useState('month');
+  const [bucket, setBucket] = useState('year');
   const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1400) : 800;
   const maxHeight = typeof window !== 'undefined' ? Math.min(window.innerHeight - 280, 500) : 400;
 
@@ -37,15 +37,6 @@ function Dashboard({ tracks, artistMap, onLogout }) {
   const margin = { top: 40, right: 30, bottom: 50, left: 60 };
   const chartWidth = maxWidth - margin.left - margin.right;
   const chartHeight = maxHeight - margin.top - margin.bottom;
-
-  const getTimeInterval = (b) => {
-    switch (b) {
-      case 'week': return timeWeek;
-      case 'month': return timeMonth;
-      case 'year': return timeYear;
-      default: return timeMonth;
-    }
-  };
 
   useEffect(() => {
     if (!tracks || !svgRef.current) return;
@@ -75,15 +66,14 @@ function Dashboard({ tracks, artistMap, onLogout }) {
       .attr('offset', '100%')
       .attr('stop-color', GRADIENT.high);
 
-    // Group tracks by selected time interval
-    const timeInterval = getTimeInterval(bucket);
+    // Group tracks by week for moving average (always weekly for finer granularity)
     const grouped = rollup(
       sortedTracks,
       (leaves) => ({
         total_popularity: sum(leaves, (d) => d.track.popularity),
         total_tracks: leaves.length,
       }),
-      (d) => timeInterval(new Date(d.added_at)).toISOString()
+      (d) => timeWeek(new Date(d.added_at)).toISOString()
     );
 
     // Calculate cumulative values for moving average
@@ -352,12 +342,32 @@ function Dashboard({ tracks, artistMap, onLogout }) {
         </div>
       )}
 
-      {tracks && <Stats tracks={tracks} artistMap={artistMap} bucket={bucket} />}
+      {tracks && <Stats tracks={tracks} artistMap={artistMap} />}
 
       <footer className="dashboard-footer">
         <button onClick={onLogout} className="btn btn--secondary">
           Log out
         </button>
+        <div className="attribution">
+          Made by{' '}
+          <a
+            href="https://twitter.com/anatomic"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="attribution-link"
+          >
+            @anatomic
+          </a>
+          {' · '}
+          <a
+            href="https://github.com/anatomic"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="attribution-link"
+          >
+            GitHub
+          </a>
+        </div>
       </footer>
     </div>
   );

@@ -75,6 +75,7 @@
   padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--border-subtle);
   font-size: var(--font-size-sm);
+  min-width: 0; /* Allow flex children to shrink below content size */
 }
 
 .stats-list li:last-child {
@@ -86,29 +87,37 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-width: 0;
+  min-width: 0; /* Critical for text truncation in flex containers */
+  max-width: calc(100% - 60px); /* Leave room for stats-value */
   gap: 2px;
 }
 
-.stats-track strong {
+.stats-track strong,
+.stats-track .stats-link {
+  display: block;
   color: var(--text-primary);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .stats-artist {
+  display: block;
   color: var(--text-muted);
   font-size: var(--font-size-xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .stats-name {
+  display: block;
   color: var(--text-primary);
   flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -210,6 +219,53 @@
   color: var(--text-muted);
   font-weight: var(--font-weight-normal);
   white-space: nowrap;
+}
+
+/* Yearly Summary Indicators */
+.stats-yearly-table td {
+  position: relative;
+}
+
+.indicator {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 6px auto 0;
+  opacity: 0.9;
+}
+
+.indicator--count {
+  box-shadow: 0 0 6px rgba(255, 158, 149, 0.5);
+}
+
+.indicator--pop {
+  box-shadow: 0 0 6px rgba(105, 0, 186, 0.5);
+}
+
+/* Legend for indicators */
+.stats-yearly-legend {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.indicator-sample {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 /* Responsive */
