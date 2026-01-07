@@ -12,7 +12,45 @@ A React/Vite application that visualizes the popularity of a user's Spotify save
 npm run dev      # Start dev server on port 3000
 npm run build    # Build to dist/
 npm run preview  # Preview production build
+npm test         # Run tests in watch mode
+npm run test:run # Run tests once
 ```
+
+## Validating Changes
+
+**IMPORTANT**: Always validate changes before pushing code. Run both the test suite and build to catch errors early.
+
+### Required Validation Steps
+
+1. **Run tests** to ensure functionality is preserved:
+   ```bash
+   npm test -- --run
+   ```
+
+2. **Run the build** to catch TypeScript errors:
+   ```bash
+   npm run build
+   ```
+
+The build runs `tsc` (TypeScript compiler) before Vite bundling. TSC errors are critical to catch before pushing - common issues include:
+- Missing type properties in mock objects
+- Unused variables (TypeScript strict mode)
+- Invalid global assignments (use `vi.stubGlobal()` in tests instead of `global.X`)
+- Missing imports
+
+### Test Coverage
+
+Run coverage report to check test quality:
+```bash
+npm run test:coverage
+```
+
+Current coverage targets core business logic modules:
+- `src/auth.ts` - PKCE authentication
+- `src/services/tokenService.ts` - Token management
+- `src/services/spotifyApi.ts` - API calls with retry logic
+- `src/cache/CacheService.ts` - Multi-adapter caching
+- `src/hooks/useChartConfig.ts` - Chart configuration
 
 ## Architecture
 

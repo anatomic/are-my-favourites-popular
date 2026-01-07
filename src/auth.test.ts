@@ -110,6 +110,7 @@ describe('auth', () => {
       expect(body.get('code')).toBe('auth-code');
       expect(body.get('code_verifier')).toBe('code-verifier');
       expect(body.get('redirect_uri')).toBe('http://localhost:3000/callback');
+      expect(body.get('client_id')).toBeDefined();
     });
 
     it('throws error on failed exchange', async () => {

@@ -4,6 +4,7 @@ import {
   fetchAllSavedTracks,
   fetchArtists,
   fetchArtistsBatch,
+  getPlaybackState,
   SpotifyApiError,
   RateLimitError,
 } from './spotifyApi';
@@ -227,106 +228,110 @@ describe('spotifyApi', () => {
   describe('rate limiting', () => {
     it('retries after rate limit with Retry-After header', async () => {
       vi.useFakeTimers();
+      try {
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 429,
+            headers: new Headers({ 'Retry-After': '1' }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id: 'user123' }),
+          });
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 429,
-          headers: new Headers({ 'Retry-After': '1' }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ id: 'user123' }),
-        });
+        const promise = fetchUserProfile();
 
-      const promise = fetchUserProfile();
+        // Fast-forward past retry delay
+        await vi.runAllTimersAsync();
 
-      // Fast-forward past retry delay
-      await vi.runAllTimersAsync();
+        const result = await promise;
 
-      const result = await promise;
-
-      expect(result).toEqual({ id: 'user123' });
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-
-      vi.useRealTimers();
+        expect(result).toEqual({ id: 'user123' });
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('throws RateLimitError after max retries', async () => {
       vi.useFakeTimers();
+      try {
+        mockFetch.mockResolvedValue({
+          ok: false,
+          status: 429,
+          headers: new Headers({ 'Retry-After': '1' }),
+        });
 
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 429,
-        headers: new Headers({ 'Retry-After': '1' }),
-      });
+        const promise = fetchUserProfile();
+        // Prevent unhandled rejection warning during timer advancement
+        promise.catch(() => {});
 
-      const promise = fetchUserProfile();
-      // Prevent unhandled rejection warning during timer advancement
-      promise.catch(() => {});
+        // Run through all retry attempts
+        for (let i = 0; i < 5; i++) {
+          await vi.runAllTimersAsync();
+        }
 
-      // Run through all retry attempts
-      for (let i = 0; i < 5; i++) {
-        await vi.runAllTimersAsync();
+        await expect(promise).rejects.toThrow(RateLimitError);
+      } finally {
+        vi.useRealTimers();
       }
-
-      await expect(promise).rejects.toThrow(RateLimitError);
-
-      vi.useRealTimers();
     });
   });
 
   describe('server error retry', () => {
     it('retries on 500 errors with exponential backoff', async () => {
       vi.useFakeTimers();
+      try {
+        mockFetch
+          .mockResolvedValueOnce({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error',
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ id: 'user123' }),
+          });
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          statusText: 'Internal Server Error',
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ id: 'user123' }),
-        });
+        const promise = fetchUserProfile();
 
-      const promise = fetchUserProfile();
+        // Fast-forward past retry delay
+        await vi.runAllTimersAsync();
 
-      // Fast-forward past retry delay
-      await vi.runAllTimersAsync();
+        const result = await promise;
 
-      const result = await promise;
-
-      expect(result).toEqual({ id: 'user123' });
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-
-      vi.useRealTimers();
+        expect(result).toEqual({ id: 'user123' });
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('throws SpotifyApiError after max retries on server error', async () => {
       vi.useFakeTimers();
+      try {
+        mockFetch.mockResolvedValue({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable',
+        });
 
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable',
-      });
+        const promise = fetchUserProfile();
+        // Prevent unhandled rejection warning during timer advancement
+        promise.catch(() => {});
 
-      const promise = fetchUserProfile();
-      // Prevent unhandled rejection warning during timer advancement
-      promise.catch(() => {});
+        // Run through all retry attempts
+        for (let i = 0; i < 5; i++) {
+          await vi.runAllTimersAsync();
+        }
 
-      // Run through all retry attempts
-      for (let i = 0; i < 5; i++) {
-        await vi.runAllTimersAsync();
+        await expect(promise).rejects.toThrow(SpotifyApiError);
+      } finally {
+        vi.useRealTimers();
       }
-
-      await expect(promise).rejects.toThrow(SpotifyApiError);
-
-      vi.useRealTimers();
     });
   });
 
@@ -337,9 +342,6 @@ describe('spotifyApi', () => {
         status: 204,
       });
 
-      // Use internal apiRequest through a public function that can return null
-      // getPlaybackState handles 204 by returning null
-      const { getPlaybackState } = await import('./spotifyApi');
       const result = await getPlaybackState();
 
       expect(result).toBeNull();
