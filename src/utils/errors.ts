@@ -47,7 +47,9 @@ export class AuthenticationError extends Error {
  * Error for premium account requirement
  */
 export class PremiumRequiredError extends Error {
-  constructor(message: string = 'Spotify Premium is required for this feature') {
+  constructor(
+    message: string = 'Spotify Premium is required for this feature'
+  ) {
     super(message);
     this.name = 'PremiumRequiredError';
   }
@@ -77,7 +79,9 @@ export function isRateLimitError(error: unknown): error is RateLimitError {
   return error instanceof RateLimitError;
 }
 
-export function isAuthenticationError(error: unknown): error is AuthenticationError {
+export function isAuthenticationError(
+  error: unknown
+): error is AuthenticationError {
   return error instanceof AuthenticationError;
 }
 

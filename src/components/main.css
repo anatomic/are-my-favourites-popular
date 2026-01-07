@@ -1,7 +1,9 @@
 @import '../styles/variables.css';
 
 /* Reset & Base */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -163,7 +165,9 @@ a:hover {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error State */
@@ -208,6 +212,12 @@ a:hover {
 }
 
 /* Utility Classes */
-.text-center { text-align: center; }
-.text-muted { color: var(--text-muted); }
-.text-green { color: var(--spotify-green); }
+.text-center {
+  text-align: center;
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-green {
+  color: var(--spotify-green);
+}

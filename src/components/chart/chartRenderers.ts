@@ -10,13 +10,13 @@
  * - Uses .join() pattern for cleaner data binding
  */
 
-import { type Selection, select } from "d3-selection";
-import { transition } from "d3-transition";
-import { axisBottom, axisLeft } from "d3-axis";
-import { timeYear } from "d3-time";
-import type { ChartConfig } from "../../hooks/useChartConfig";
-import type { SavedTrack, SpotifyTrack } from "../../types/spotify";
-import { cssColors } from "../../utils/cssVariables";
+import { type Selection, select } from 'd3-selection';
+import { transition } from 'd3-transition';
+import { axisBottom, axisLeft } from 'd3-axis';
+import { timeYear } from 'd3-time';
+import type { ChartConfig } from '../../hooks/useChartConfig';
+import type { SavedTrack, SpotifyTrack } from '../../types/spotify';
+import { cssColors } from '../../utils/cssVariables';
 
 // Ensure d3-transition extends d3-selection
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -33,23 +33,23 @@ type SVGSelection = Selection<SVGSVGElement, unknown, null, undefined>;
  * Render the gradient definition used for coloring data points
  */
 export function renderGradientDef(svg: SVGSelection): void {
-  const defs = svg.append("defs");
+  const defs = svg.append('defs');
   const gradient = defs
-    .append("linearGradient")
-    .attr("id", "popularityGradient")
-    .attr("x1", "0%")
-    .attr("y1", "100%")
-    .attr("x2", "0%")
-    .attr("y2", "0%");
+    .append('linearGradient')
+    .attr('id', 'popularityGradient')
+    .attr('x1', '0%')
+    .attr('y1', '100%')
+    .attr('x2', '0%')
+    .attr('y2', '0%');
 
   gradient
-    .append("stop")
-    .attr("offset", "0%")
-    .attr("stop-color", cssColors.chartGradientLow);
+    .append('stop')
+    .attr('offset', '0%')
+    .attr('stop-color', cssColors.chartGradientLow);
   gradient
-    .append("stop")
-    .attr("offset", "100%")
-    .attr("stop-color", cssColors.chartGradientHigh);
+    .append('stop')
+    .attr('offset', '100%')
+    .attr('stop-color', cssColors.chartGradientHigh);
 }
 
 /**
@@ -61,22 +61,22 @@ export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
   const { y } = scales;
 
   const gridLines = [20, 40, 60, 80, 100].filter(
-    (v) => v <= Math.ceil(maxPopularity / 10) * 10,
+    (v) => v <= Math.ceil(maxPopularity / 10) * 10
   );
 
   svg
-    .selectAll<SVGLineElement, number>(".grid-line")
+    .selectAll<SVGLineElement, number>('.grid-line')
     .data(gridLines)
     .enter()
-    .append("line")
-    .attr("class", "grid-line")
-    .attr("x1", margins.left)
-    .attr("x2", width - margins.right)
-    .attr("y1", (d: number) => y(d))
-    .attr("y2", (d: number) => y(d))
-    .attr("stroke", cssColors.chartGrid)
-    .attr("stroke-width", 1)
-    .attr("opacity", 1);
+    .append('line')
+    .attr('class', 'grid-line')
+    .attr('x1', margins.left)
+    .attr('x2', width - margins.right)
+    .attr('y1', (d: number) => y(d))
+    .attr('y2', (d: number) => y(d))
+    .attr('stroke', cssColors.chartGrid)
+    .attr('stroke-width', 1)
+    .attr('opacity', 1);
 }
 
 /**
@@ -92,27 +92,27 @@ export function renderAxes(svg: SVGSelection, config: ChartConfig): void {
 
   // X-axis
   svg
-    .append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0,${height - margins.bottom})`)
+    .append('g')
+    .attr('class', 'x-axis')
+    .attr('transform', `translate(0,${height - margins.bottom})`)
     .call(xAxis);
 
   // Y-axis
   svg
-    .append("g")
-    .attr("class", "y-axis")
-    .attr("transform", `translate(${margins.left},0)`)
+    .append('g')
+    .attr('class', 'y-axis')
+    .attr('transform', `translate(${margins.left},0)`)
     .call(yAxis);
 
   // Y-axis label
   svg
-    .append("text")
-    .attr("class", "axis-label")
-    .attr("transform", "rotate(-90)")
-    .attr("x", -(height / 2))
-    .attr("y", 16)
-    .attr("text-anchor", "middle")
-    .text("Popularity Score");
+    .append('text')
+    .attr('class', 'axis-label')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -(height / 2))
+    .attr('y', 16)
+    .attr('text-anchor', 'middle')
+    .text('Popularity Score');
 }
 
 export interface DataPointHandlers {
@@ -134,29 +134,29 @@ export interface DataPointHandlers {
 export function setupDataPointHandlers(
   svg: SVGSelection,
   config: ChartConfig,
-  handlers: DataPointHandlers,
+  handlers: DataPointHandlers
 ): void {
   const { scales } = config;
   const { color } = scales;
 
   // Get or create the data points container group
-  let container = svg.select<SVGGElement>("g.data-points-container");
+  let container = svg.select<SVGGElement>('g.data-points-container');
   if (container.empty()) {
-    container = svg.append("g").attr("class", "data-points-container");
+    container = svg.append('g').attr('class', 'data-points-container');
   }
 
   // Event delegation: attach handlers to container, use bubbling to catch circle events
   container
-    .on("click", function (event: MouseEvent) {
+    .on('click', function (event: MouseEvent) {
       const target = event.target as Element;
-      if (target.classList.contains("data-point")) {
+      if (target.classList.contains('data-point')) {
         const d = select<Element, SavedTrack>(target).datum();
         if (d) handlers.onClick(d.track);
       }
     })
-    .on("mouseover", function (event: MouseEvent) {
+    .on('mouseover', function (event: MouseEvent) {
       const target = event.target as Element;
-      if (target.classList.contains("data-point")) {
+      if (target.classList.contains('data-point')) {
         const d = select<Element, SavedTrack>(target).datum();
         if (d) {
           const popColor = color(d.track.popularity);
@@ -164,9 +164,9 @@ export function setupDataPointHandlers(
         }
       }
     })
-    .on("mouseout", function (event: MouseEvent) {
+    .on('mouseout', function (event: MouseEvent) {
       const target = event.target as Element;
-      if (target.classList.contains("data-point")) {
+      if (target.classList.contains('data-point')) {
         const d = select<Element, SavedTrack>(target).datum();
         if (d) handlers.onMouseOut(event, d);
       }
@@ -209,23 +209,23 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
   const getStroke = (d: SavedTrack) =>
     d.track.popularity === maxPopularity
       ? cssColors.spotifyGreenLight
-      : "rgba(0,0,0,0.2)";
+      : 'rgba(0,0,0,0.2)';
 
   const getStrokeWidth = (d: SavedTrack) =>
     d.track.popularity === maxPopularity ? 2 : 0.5;
 
   // Get or create the container group for data points
-  let container = svg.select<SVGGElement>("g.data-points-container");
+  let container = svg.select<SVGGElement>('g.data-points-container');
   if (container.empty()) {
-    container = svg.append("g").attr("class", "data-points-container");
+    container = svg.append('g').attr('class', 'data-points-container');
   }
 
   // Detect first render by checking if circles already exist
-  const isFirstRender = container.selectAll("circle.data-point").empty();
+  const isFirstRender = container.selectAll('circle.data-point').empty();
 
   // Bind data with track ID as key for proper enter/update/exit detection
   const circles = container
-    .selectAll<SVGCircleElement, SavedTrack>("circle.data-point")
+    .selectAll<SVGCircleElement, SavedTrack>('circle.data-point')
     .data(sortedTracks, (d: SavedTrack) => d.track.id);
 
   // Handle exiting elements - animate down and out
@@ -233,28 +233,28 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
     select(this)
       .transition()
       .duration(TRANSITION_DURATION / 2)
-      .attr("cy", startY)
-      .attr("r", MIN_RADIUS)
-      .attr("opacity", 0)
+      .attr('cy', startY)
+      .attr('r', MIN_RADIUS)
+      .attr('opacity', 0)
       .remove();
   });
 
   // Handle entering elements - create circles
   const entering = circles
     .enter()
-    .append("circle")
-    .attr("class", "data-point")
-    .attr("cx", (d: SavedTrack) => x(new Date(d.added_at)))
+    .append('circle')
+    .attr('class', 'data-point')
+    .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
     .attr(
-      "cy",
-      isFirstRender ? startY : (d: SavedTrack) => y(d.track.popularity),
+      'cy',
+      isFirstRender ? startY : (d: SavedTrack) => y(d.track.popularity)
     )
-    .attr("r", isFirstRender ? MIN_RADIUS : getRadius)
-    .attr("fill", isFirstRender ? startColor : getFill)
-    .attr("opacity", isFirstRender ? 0.6 : getOpacity)
-    .attr("stroke", isFirstRender ? "rgba(0,0,0,0.1)" : getStroke)
-    .attr("stroke-width", isFirstRender ? 0.5 : getStrokeWidth)
-    .style("cursor", "pointer");
+    .attr('r', isFirstRender ? MIN_RADIUS : getRadius)
+    .attr('fill', isFirstRender ? startColor : getFill)
+    .attr('opacity', isFirstRender ? 0.6 : getOpacity)
+    .attr('stroke', isFirstRender ? 'rgba(0,0,0,0.1)' : getStroke)
+    .attr('stroke-width', isFirstRender ? 0.5 : getStrokeWidth)
+    .style('cursor', 'pointer');
 
   // Animate entering elements (only stagger on first render)
   if (isFirstRender) {
@@ -265,12 +265,12 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
         .transition()
         .duration(TRANSITION_DURATION)
         .delay(delay)
-        .attr("cy", y(d.track.popularity))
-        .attr("r", getRadius(d))
-        .attr("fill", getFill(d))
-        .attr("opacity", getOpacity(d))
-        .attr("stroke", getStroke(d))
-        .attr("stroke-width", getStrokeWidth(d));
+        .attr('cy', y(d.track.popularity))
+        .attr('r', getRadius(d))
+        .attr('fill', getFill(d))
+        .attr('opacity', getOpacity(d))
+        .attr('stroke', getStroke(d))
+        .attr('stroke-width', getStrokeWidth(d));
     });
   }
 
@@ -280,11 +280,11 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
     select(this)
       .transition()
       .duration(TRANSITION_DURATION)
-      .attr("cx", x(new Date(d.added_at)))
-      .attr("cy", y(d.track.popularity))
-      .attr("r", getRadius(d))
-      .attr("fill", getFill(d))
-      .attr("opacity", getOpacity(d));
+      .attr('cx', x(new Date(d.added_at)))
+      .attr('cy', y(d.track.popularity))
+      .attr('r', getRadius(d))
+      .attr('fill', getFill(d))
+      .attr('opacity', getOpacity(d));
   });
 }
 
@@ -292,7 +292,7 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
  * Escape HTML to prevent XSS vulnerabilities
  */
 function escapeHtml(text: string): string {
-  const div = document.createElement("div");
+  const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
@@ -302,14 +302,14 @@ function escapeHtml(text: string): string {
  */
 export function createTooltipContent(
   track: SavedTrack,
-  popColor: string,
+  popColor: string
 ): string {
   const addedDate = new Date(track.added_at).toLocaleDateString();
 
   // Escape all user-provided content to prevent XSS
   const trackName = escapeHtml(track.track.name);
   const artistNames = escapeHtml(
-    track.track.artists.map((a) => a.name).join(", "),
+    track.track.artists.map((a) => a.name).join(', ')
   );
   const albumName = escapeHtml(track.track.album.name);
   // Escape color value in case it's manipulated

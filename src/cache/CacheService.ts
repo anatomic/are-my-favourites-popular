@@ -137,7 +137,7 @@ export class CacheService {
       await Promise.all([
         this._indexedDB.clear(storeName).catch(() => {}),
         this._localStorage.clear(storeName).catch(() => {}),
-        this._memory.clear(storeName)
+        this._memory.clear(storeName),
       ]);
       return true;
     } catch {
@@ -197,7 +197,10 @@ export class CacheService {
   /**
    * Try fallback adapters for get operations
    */
-  private async _tryFallbackGet<T>(storeName: string, key: string): Promise<T | null> {
+  private async _tryFallbackGet<T>(
+    storeName: string,
+    key: string
+  ): Promise<T | null> {
     // Try localStorage if we're not already using it
     if (this._activeAdapter !== this._localStorage) {
       try {
@@ -224,19 +227,28 @@ export class CacheService {
    * Try fallback adapters for getMany operations
    * Collects results from all available adapters for missing keys
    */
-  private async _tryFallbackGetMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+  private async _tryFallbackGetMany<T>(
+    storeName: string,
+    keys: string[]
+  ): Promise<Map<string, T>> {
     const result = new Map<string, T>();
     let remainingKeys = [...keys];
 
     // Try localStorage if we're not already using it
-    if (this._activeAdapter !== this._localStorage && remainingKeys.length > 0) {
+    if (
+      this._activeAdapter !== this._localStorage &&
+      remainingKeys.length > 0
+    ) {
       try {
-        const localResult = await this._localStorage.getMany<T>(storeName, remainingKeys);
+        const localResult = await this._localStorage.getMany<T>(
+          storeName,
+          remainingKeys
+        );
         for (const [key, value] of localResult.entries()) {
           result.set(key, value);
         }
         // Filter out found keys
-        remainingKeys = remainingKeys.filter(key => !localResult.has(key));
+        remainingKeys = remainingKeys.filter((key) => !localResult.has(key));
       } catch {
         // Continue to memory
       }
@@ -245,7 +257,10 @@ export class CacheService {
     // Try memory as last resort for any remaining keys
     if (this._activeAdapter !== this._memory && remainingKeys.length > 0) {
       try {
-        const memoryResult = await this._memory.getMany<T>(storeName, remainingKeys);
+        const memoryResult = await this._memory.getMany<T>(
+          storeName,
+          remainingKeys
+        );
         for (const [key, value] of memoryResult.entries()) {
           result.set(key, value);
         }
@@ -260,7 +275,11 @@ export class CacheService {
   /**
    * Try fallback adapters for set operations
    */
-  private async _tryFallbackSet<T>(storeName: string, key: string, value: T): Promise<boolean> {
+  private async _tryFallbackSet<T>(
+    storeName: string,
+    key: string,
+    value: T
+  ): Promise<boolean> {
     // Try localStorage if we're not already using it
     if (this._activeAdapter !== this._localStorage) {
       try {

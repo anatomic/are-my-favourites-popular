@@ -21,7 +21,7 @@ export const SPOTIFY_CLIENT_ID: string =
 if (import.meta.env.PROD && !import.meta.env.VITE_SPOTIFY_CLIENT_ID) {
   console.warn(
     'VITE_SPOTIFY_CLIENT_ID is not set. Using fallback client ID. ' +
-    'Set this environment variable in production.'
+      'Set this environment variable in production.'
   );
 }
 

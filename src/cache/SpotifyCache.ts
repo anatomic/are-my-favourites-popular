@@ -7,7 +7,13 @@
 
 import { getCacheService, CacheService } from './CacheService';
 import { CACHE_CONFIG } from './constants';
-import type { SpotifyArtist, SavedTrack, TrackCacheEntry, ArtistCacheEntry, ArtistMap } from '../types/spotify';
+import type {
+  SpotifyArtist,
+  SavedTrack,
+  TrackCacheEntry,
+  ArtistCacheEntry,
+  ArtistMap,
+} from '../types/spotify';
 
 const { STORES, TRACK_CACHE_TTL, ARTIST_CACHE_TTL } = CACHE_CONFIG;
 
@@ -62,7 +68,10 @@ class SpotifyCache {
     await this._ensureInit();
 
     const cacheKey = `user_${userId}`;
-    const cached = await this._cacheService.get<TrackCacheEntry>(STORES.TRACKS, cacheKey);
+    const cached = await this._cacheService.get<TrackCacheEntry>(
+      STORES.TRACKS,
+      cacheKey
+    );
 
     if (!cached) return null;
 
@@ -89,7 +98,7 @@ class SpotifyCache {
     const cacheEntry: TrackCacheEntry = {
       userId,
       items: tracks,
-      cachedAt: Date.now()
+      cachedAt: Date.now(),
     };
 
     return this._cacheService.set(STORES.TRACKS, cacheKey, cacheEntry);
@@ -137,7 +146,10 @@ class SpotifyCache {
     for (const artistId of artistIds) {
       const cached = cachedEntries.get(artistId);
 
-      if (cached && !this._cacheService.isExpired(cached.cachedAt, ARTIST_CACHE_TTL)) {
+      if (
+        cached &&
+        !this._cacheService.isExpired(cached.cachedAt, ARTIST_CACHE_TTL)
+      ) {
         cachedArtists.set(artistId, cached.artist);
       } else {
         uncachedIds.push(artistId);
@@ -155,15 +167,15 @@ class SpotifyCache {
     await this._ensureInit();
 
     const results = await Promise.all(
-      artists.map(artist =>
+      artists.map((artist) =>
         this._cacheService.set<ArtistCacheEntry>(STORES.ARTISTS, artist.id, {
           artist,
-          cachedAt: Date.now()
+          cachedAt: Date.now(),
         })
       )
     );
 
-    return results.every(r => r);
+    return results.every((r) => r);
   }
 
   /**
@@ -209,7 +221,7 @@ class SpotifyCache {
       trackCacheCount: trackKeys.length,
       artistCacheCount: artistKeys.length,
       trackTTL: TRACK_CACHE_TTL,
-      artistTTL: ARTIST_CACHE_TTL
+      artistTTL: ARTIST_CACHE_TTL,
     };
   }
 }

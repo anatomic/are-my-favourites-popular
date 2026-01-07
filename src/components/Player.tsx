@@ -81,7 +81,8 @@ function Player({
   const [localPosition, setLocalPosition] = useState<number>(position);
   const [isDraggingProgress, setIsDraggingProgress] = useState<boolean>(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState<boolean>(false);
-  const [hasInitializedVolume, setHasInitializedVolume] = useState<boolean>(false);
+  const [hasInitializedVolume, setHasInitializedVolume] =
+    useState<boolean>(false);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -126,16 +127,19 @@ function Player({
   }, [isPlaying, position, duration, isDragging]);
 
   // Progress bar drag handlers
-  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
-    if (!progressRef.current || !duration) return;
-    e.preventDefault();
-    setIsDraggingProgress(true);
+  const handleProgressMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>): void => {
+      if (!progressRef.current || !duration) return;
+      e.preventDefault();
+      setIsDraggingProgress(true);
 
-    const rect = progressRef.current.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    const newPosition = Math.max(0, Math.min(percent * duration, duration));
-    setLocalPosition(newPosition);
-  }, [duration]);
+      const rect = progressRef.current.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      const newPosition = Math.max(0, Math.min(percent * duration, duration));
+      setLocalPosition(newPosition);
+    },
+    [duration]
+  );
 
   useEffect(() => {
     if (!isDraggingProgress) return;
@@ -167,15 +171,21 @@ function Player({
   }, [isDraggingProgress, duration, onSeek]);
 
   // Volume bar drag handlers
-  const handleVolumeMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
-    if (!volumeRef.current) return;
-    e.preventDefault();
-    setIsDraggingVolume(true);
+  const handleVolumeMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>): void => {
+      if (!volumeRef.current) return;
+      e.preventDefault();
+      setIsDraggingVolume(true);
 
-    const rect = volumeRef.current.getBoundingClientRect();
-    const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
-    setVolume(newVolume);
-  }, []);
+      const rect = volumeRef.current.getBoundingClientRect();
+      const newVolume = Math.max(
+        0,
+        Math.min((e.clientX - rect.left) / rect.width, 1)
+      );
+      setVolume(newVolume);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!isDraggingVolume) return;
@@ -183,14 +193,20 @@ function Player({
     const handleMouseMove = (e: MouseEvent): void => {
       if (!volumeRef.current) return;
       const rect = volumeRef.current.getBoundingClientRect();
-      const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
+      const newVolume = Math.max(
+        0,
+        Math.min((e.clientX - rect.left) / rect.width, 1)
+      );
       setVolume(newVolume);
     };
 
     const handleMouseUp = (e: MouseEvent): void => {
       if (volumeRef.current) {
         const rect = volumeRef.current.getBoundingClientRect();
-        const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
+        const newVolume = Math.max(
+          0,
+          Math.min((e.clientX - rect.left) / rect.width, 1)
+        );
         onVolumeChange?.(newVolume);
       }
       setIsDraggingVolume(false);
@@ -213,11 +229,13 @@ function Player({
         <div className="player-premium-message">
           <span className="player-premium-icon">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
             </svg>
           </span>
           <span>Spotify Premium required for full playback</span>
-          <span className="player-premium-hint">Click tracks on the chart to hear 30-second previews</span>
+          <span className="player-premium-hint">
+            Click tracks on the chart to hear 30-second previews
+          </span>
         </div>
       </div>
     );
@@ -248,16 +266,20 @@ function Player({
     <div className="player">
       {/* Album Art */}
       <div className="player-artwork">
-        {(currentTrack?.album?.images?.[0]?.url || currentTrack?.album?.images?.[2]?.url) ? (
+        {currentTrack?.album?.images?.[0]?.url ||
+        currentTrack?.album?.images?.[2]?.url ? (
           <img
-            src={currentTrack.album.images[2]?.url || currentTrack.album.images[0]?.url}
+            src={
+              currentTrack.album.images[2]?.url ||
+              currentTrack.album.images[0]?.url
+            }
             alt={currentTrack.album.name}
             className="player-artwork-img"
           />
         ) : (
           <div className="player-artwork-placeholder">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
             </svg>
           </div>
         )}
@@ -268,7 +290,10 @@ function Player({
         {currentTrack ? (
           <>
             <a
-              href={currentTrack.external_urls?.spotify || `https://open.spotify.com/track/${currentTrack.id}`}
+              href={
+                currentTrack.external_urls?.spotify ||
+                `https://open.spotify.com/track/${currentTrack.id}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="player-track-name"
@@ -280,7 +305,10 @@ function Player({
                 <span key={artist.id || artist.uri}>
                   {idx > 0 && ', '}
                   <a
-                    href={artist.external_urls?.spotify || `https://open.spotify.com/artist/${artist.id || artist.uri?.split(':')[2]}`}
+                    href={
+                      artist.external_urls?.spotify ||
+                      `https://open.spotify.com/artist/${artist.id || artist.uri?.split(':')[2]}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="player-artist-link"
@@ -292,7 +320,9 @@ function Player({
             </span>
           </>
         ) : (
-          <span className="player-no-track">Click a track on the chart to play</span>
+          <span className="player-no-track">
+            Click a track on the chart to play
+          </span>
         )}
       </div>
 

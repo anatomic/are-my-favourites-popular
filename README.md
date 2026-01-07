@@ -19,8 +19,8 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
 
 ## Screenshots
 
-| Chart View | Library Stats |
-|------------|---------------|
+| Chart View                                                  | Library Stats                            |
+| ----------------------------------------------------------- | ---------------------------------------- |
 | Interactive scatter plot showing track popularity over time | Top tracks, artists, genres with sorting |
 
 ## Getting Started
@@ -34,12 +34,14 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/anatomic/are-my-favourites-popular.git
    cd are-my-favourites-popular
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -49,6 +51,7 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
    Create your app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and add `http://localhost:3000` as a Redirect URI.
 
    Set your Client ID via environment variable:
+
    ```bash
    CLIENT_ID=your_client_id npm run dev
    ```
@@ -56,6 +59,7 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
    Or update `vite.config.js` directly.
 
 4. **Start the development server**
+
    ```bash
    npm run dev
    ```

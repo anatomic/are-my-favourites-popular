@@ -55,11 +55,13 @@ Current coverage targets core business logic modules:
 ## Architecture
 
 **Auth Flow**: Spotify OAuth using Authorization Code with PKCE (no backend required)
+
 - `src/auth.js` - PKCE utilities (code verifier/challenge generation, token exchange/refresh)
 - `src/components/Login.jsx` - Initiates OAuth redirect to Spotify
 - `src/App.jsx` - Handles OAuth callback, token storage (localStorage), and API requests
 
 **Visualization**: D3.js chart rendered in React
+
 - `src/components/Dashboard.jsx` - Main visualization component using D3 for:
   - Scatter plot of tracks (bubble size = popularity)
   - Moving average line (cumulative mean popularity)
@@ -68,6 +70,7 @@ Current coverage targets core business logic modules:
   - Click-to-preview audio playback
 
 **Data Flow**:
+
 1. App fetches all saved tracks via paginated Spotify API calls (`/v1/me/tracks`)
 2. Tracks grouped by week using `d3-time.timeWeek`
 3. D3 renders SVG with scales for time (x), popularity (y), and bubble radius
@@ -75,6 +78,7 @@ Current coverage targets core business logic modules:
 ## Spotify API Configuration
 
 The `CLIENT_ID` is injected via Vite's `define` config (see `vite.config.js`). Override with environment variable:
+
 ```bash
 CLIENT_ID=your_client_id npm run dev
 ```
@@ -89,36 +93,40 @@ This app follows [Spotify's Design Guidelines](https://developer.spotify.com/doc
 
 ```css
 /* Primary - Spotify Brand */
---spotify-green: #1DB954;        /* Primary accent, CTAs, success states */
---spotify-green-light: #1ED760;  /* Logo tint, hover states */
---spotify-black: #191414;        /* Primary background */
---spotify-dark: #121212;         /* Cards, elevated surfaces */
+--spotify-green: #1db954; /* Primary accent, CTAs, success states */
+--spotify-green-light: #1ed760; /* Logo tint, hover states */
+--spotify-black: #191414; /* Primary background */
+--spotify-dark: #121212; /* Cards, elevated surfaces */
 --spotify-dark-highlight: #282828; /* Hover states on dark */
 
 /* Text */
---text-primary: #FFFFFF;         /* Headings, primary content */
---text-secondary: #B3B3B3;       /* Secondary info, metadata */
---text-muted: #727272;           /* Tertiary, timestamps */
+--text-primary: #ffffff; /* Headings, primary content */
+--text-secondary: #b3b3b3; /* Secondary info, metadata */
+--text-muted: #727272; /* Tertiary, timestamps */
 
 /* Surfaces */
---surface-base: #121212;         /* App background */
---surface-elevated: #181818;     /* Cards */
---surface-highlight: #282828;    /* Hover, focus states */
+--surface-base: #121212; /* App background */
+--surface-elevated: #181818; /* Cards */
+--surface-highlight: #282828; /* Hover, focus states */
 
 /* Data Visualization */
---chart-accent: #1DB954;         /* Primary data points */
---chart-secondary: #535353;      /* Grid lines, axes */
+--chart-accent: #1db954; /* Primary data points */
+--chart-secondary: #535353; /* Grid lines, axes */
 --chart-area: rgba(29, 185, 84, 0.1); /* Area fills */
 ```
 
 ### Typography
 
 Use platform defaults with this fallback stack:
+
 ```css
-font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+font-family:
+  -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial,
+  sans-serif;
 ```
 
 **Scale:**
+
 - Display: 32px / 700 weight — Page titles
 - Heading: 24px / 700 weight — Section headers
 - Title: 16px / 700 weight — Card titles, list items
@@ -128,39 +136,41 @@ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Ari
 ### Components
 
 **Buttons**
+
 ```css
 /* Primary CTA */
 .btn-primary {
-  background: #1DB954;
+  background: #1db954;
   color: #000000;
-  border-radius: 500px;      /* Spotify's pill shape */
+  border-radius: 500px; /* Spotify's pill shape */
   padding: 12px 32px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 .btn-primary:hover {
-  background: #1ED760;
+  background: #1ed760;
   transform: scale(1.04);
 }
 
 /* Secondary/Ghost */
 .btn-secondary {
   background: transparent;
-  color: #FFFFFF;
-  border: 1px solid rgba(255,255,255,0.3);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 500px;
 }
 .btn-secondary:hover {
-  border-color: #FFFFFF;
+  border-color: #ffffff;
 }
 ```
 
 **Cards**
+
 ```css
 .card {
   background: #181818;
-  border-radius: 8px;        /* 4px on mobile */
+  border-radius: 8px; /* 4px on mobile */
   padding: 16px;
   transition: background 0.3s ease;
 }
@@ -170,13 +180,14 @@ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Ari
 ```
 
 **Spotify Links** (tracks, artists, albums)
+
 ```css
 .spotify-link {
-  color: #FFFFFF;
+  color: #ffffff;
   text-decoration: none;
 }
 .spotify-link:hover {
-  color: #1DB954;
+  color: #1db954;
   text-decoration: underline;
 }
 ```
@@ -184,12 +195,14 @@ font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Ari
 ### Branding Assets We Can Use
 
 Per Spotify guidelines, we are permitted to use:
+
 - **Spotify Icon**: For "Listen on Spotify" buttons (min 21px)
 - **Full Logo**: When space allows (min 70px)
 - **Like Icon**: Heart icon for saved tracks
 - Download from: [Spotify Design Resources](https://developer.spotify.com/documentation/design)
 
 **Button Text Options:**
+
 - "PLAY ON SPOTIFY" — When app is installed
 - "LISTEN ON SPOTIFY" — Alternative
 - "GET SPOTIFY FREE" — When app not installed
@@ -197,6 +210,7 @@ Per Spotify guidelines, we are permitted to use:
 ### Data Visualization Guidelines
 
 **Chart Styling:**
+
 - Dark background (`#121212`) for contrast
 - Spotify Green (`#1DB954`) for primary data series
 - White (`#FFFFFF`) for axis labels
@@ -204,18 +218,20 @@ Per Spotify guidelines, we are permitted to use:
 - Semi-transparent green fills for areas
 
 **Data Points:**
+
 - Use Spotify Green for interactive elements
 - Size encoding: 4px min, 20px max radius
 - Hover: brighten to `#1ED760`, show tooltip
 
 **Tooltips:**
+
 ```css
 .tooltip {
   background: #282828;
-  color: #FFFFFF;
+  color: #ffffff;
   border-radius: 4px;
   padding: 8px 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 ```
 

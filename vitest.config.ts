@@ -21,6 +21,8 @@ export default defineConfig({
     },
   },
   define: {
-    CLIENT_ID: JSON.stringify(process.env.VITE_SPOTIFY_CLIENT_ID || 'test-client-id'),
+    CLIENT_ID: JSON.stringify(
+      process.env.VITE_SPOTIFY_CLIENT_ID || 'test-client-id'
+    ),
   },
 });

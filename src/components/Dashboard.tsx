@@ -14,7 +14,11 @@ import {
   setupDataPointHandlers,
   createTooltipContent,
 } from './chart';
-import type { DashboardProps, SavedTrack, SpotifyTrack } from '../types/spotify';
+import type {
+  DashboardProps,
+  SavedTrack,
+  SpotifyTrack,
+} from '../types/spotify';
 import './dashboard.css';
 import './graph.css';
 
@@ -26,7 +30,12 @@ interface ChartStats {
   topTrackId: string;
 }
 
-function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardProps): ReactElement {
+function Dashboard({
+  tracks,
+  artistMap,
+  onLogout,
+  getAccessToken,
+}: DashboardProps): ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -43,10 +52,14 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
     if (!tracks || tracks.length === 0) return null;
     const avgPop = mean(tracks, (d: SavedTrack) => d.track.popularity) ?? 0;
     const maxPop = max(tracks, (d: SavedTrack) => d.track.popularity) ?? 0;
-    const zeroCount = tracks.filter((d: SavedTrack) => d.track.popularity === 0).length;
-    const topTrack = tracks.reduce((best: SavedTrack, curr: SavedTrack) =>
-      curr.track.popularity > best.track.popularity ? curr : best
-    , tracks[0]);
+    const zeroCount = tracks.filter(
+      (d: SavedTrack) => d.track.popularity === 0
+    ).length;
+    const topTrack = tracks.reduce(
+      (best: SavedTrack, curr: SavedTrack) =>
+        curr.track.popularity > best.track.popularity ? curr : best,
+      tracks[0]
+    );
     return {
       total: tracks.length,
       avgPopularity: Math.round(avgPop),
@@ -60,58 +73,60 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
   const player = useSpotifyPlayer(getAccessToken);
 
   // Play a track - SDK only (Premium required)
-  const playTrack = useCallback(async (track: SpotifyTrack): Promise<void> => {
-    if (!player.isReady || !player.isPremium) {
-      return;
-    }
-    const trackUri = `spotify:track:${track.id}`;
-    await player.play(trackUri);
-  }, [player]);
+  const playTrack = useCallback(
+    async (track: SpotifyTrack): Promise<void> => {
+      if (!player.isReady || !player.isPremium) {
+        return;
+      }
+      const trackUri = `spotify:track:${track.id}`;
+      await player.play(trackUri);
+    },
+    [player]
+  );
 
   // Tooltip event handlers
-  const handleMouseOver = useCallback((
-    event: MouseEvent,
-    track: SavedTrack,
-    popColor: string
-  ): void => {
-    const tooltip = tooltipRef.current;
-    const target = event.target as SVGCircleElement;
+  const handleMouseOver = useCallback(
+    (event: MouseEvent, track: SavedTrack, popColor: string): void => {
+      const tooltip = tooltipRef.current;
+      const target = event.target as SVGCircleElement;
 
-    if (chartConfig) {
-      select(target)
-        .attr('opacity', 1)
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 2)
-        .attr('r', chartConfig.scales.radius(track.track.popularity) * 1.4);
-    }
+      if (chartConfig) {
+        select(target)
+          .attr('opacity', 1)
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 2)
+          .attr('r', chartConfig.scales.radius(track.track.popularity) * 1.4);
+      }
 
-    if (tooltip) {
-      tooltip.innerHTML = createTooltipContent(track, popColor);
-      tooltip.style.opacity = '1';
-      tooltip.style.left = `${event.pageX + 15}px`;
-      tooltip.style.top = `${event.pageY - 10}px`;
-    }
-  }, [chartConfig]);
+      if (tooltip) {
+        tooltip.innerHTML = createTooltipContent(track, popColor);
+        tooltip.style.opacity = '1';
+        tooltip.style.left = `${event.pageX + 15}px`;
+        tooltip.style.top = `${event.pageY - 10}px`;
+      }
+    },
+    [chartConfig]
+  );
 
-  const handleMouseOut = useCallback((
-    _event: MouseEvent,
-    track: SavedTrack
-  ): void => {
-    const tooltip = tooltipRef.current;
-    const target = _event.target as SVGCircleElement;
+  const handleMouseOut = useCallback(
+    (_event: MouseEvent, track: SavedTrack): void => {
+      const tooltip = tooltipRef.current;
+      const target = _event.target as SVGCircleElement;
 
-    if (chartConfig) {
-      select(target)
-        .attr('opacity', 0.75)
-        .attr('stroke', 'rgba(0,0,0,0.2)')
-        .attr('stroke-width', 0.5)
-        .attr('r', chartConfig.scales.radius(track.track.popularity));
-    }
+      if (chartConfig) {
+        select(target)
+          .attr('opacity', 0.75)
+          .attr('stroke', 'rgba(0,0,0,0.2)')
+          .attr('stroke-width', 0.5)
+          .attr('r', chartConfig.scales.radius(track.track.popularity));
+      }
 
-    if (tooltip) {
-      tooltip.style.opacity = '0';
-    }
-  }, [chartConfig]);
+      if (tooltip) {
+        tooltip.style.opacity = '0';
+      }
+    },
+    [chartConfig]
+  );
 
   // Set up event handlers once - only when handlers change
   useEffect(() => {
@@ -151,7 +166,8 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
 
     // Check if this is the first data render (no circles yet)
     const container = svg.select('g.data-points-container');
-    const isFirstDataRender = container.empty() || container.selectAll('circle').empty();
+    const isFirstDataRender =
+      container.empty() || container.selectAll('circle').empty();
 
     if (isFirstDataRender) {
       // First render: animate from bottom with stagger
@@ -169,15 +185,21 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       renderDataPoints(svg, chartConfig);
     }
     // If animating, skip data point update to prevent transition interruption
-
   }, [chartConfig]);
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Are my favourites <span className="text-green">popular?</span></h1>
-        <p className="subtitle">Popularity scores reflect current streaming activity, not when you added each track</p>
-        <p className="helper-text">Click any track to play it in the player below</p>
+        <h1>
+          Are my favourites <span className="text-green">popular?</span>
+        </h1>
+        <p className="subtitle">
+          Popularity scores reflect current streaming activity, not when you
+          added each track
+        </p>
+        <p className="helper-text">
+          Click any track to play it in the player below
+        </p>
       </header>
 
       {tracks ? (
@@ -201,15 +223,21 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
           {chartStats && (
             <div className="chart-stats">
               <div className="chart-stat">
-                <span className="chart-stat-value">{chartStats.total.toLocaleString()}</span>
+                <span className="chart-stat-value">
+                  {chartStats.total.toLocaleString()}
+                </span>
                 <span className="chart-stat-label">Total Tracks</span>
               </div>
               <div className="chart-stat">
-                <span className="chart-stat-value">{chartStats.avgPopularity}</span>
+                <span className="chart-stat-value">
+                  {chartStats.avgPopularity}
+                </span>
                 <span className="chart-stat-label">Avg Popularity</span>
               </div>
               <div className="chart-stat">
-                <span className="chart-stat-value chart-stat-value--highlight">{chartStats.maxPopularity}</span>
+                <span className="chart-stat-value chart-stat-value--highlight">
+                  {chartStats.maxPopularity}
+                </span>
                 <span className="chart-stat-label">Highest</span>
               </div>
               <div className="chart-stat">
@@ -243,7 +271,9 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
         onVolumeChange={player.setVolume}
       />
 
-      {tracks && <Stats tracks={tracks} artistMap={artistMap} onPlayTrack={playTrack} />}
+      {tracks && (
+        <Stats tracks={tracks} artistMap={artistMap} onPlayTrack={playTrack} />
+      )}
 
       <footer className="dashboard-footer">
         <button onClick={onLogout} className="btn btn--secondary">
@@ -259,9 +289,9 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
             fill="currentColor"
             aria-label="love"
           >
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-          {' '}by{' '}
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          </svg>{' '}
+          by{' '}
           <a
             href="https://twitter.com/anatomic"
             target="_blank"

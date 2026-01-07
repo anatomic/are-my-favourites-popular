@@ -5,7 +5,14 @@
  * Handles OAuth callback, token management, and session restoration.
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react';
 import { exchangeCodeForToken } from '../auth';
 import { loggers } from '../utils/logger';
 import {
@@ -60,7 +67,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
       const authError = params.get('error');
 
       if (authError) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           error: `Authorization failed: ${authError}`,
           isLoading: false,
@@ -72,7 +79,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
         // Exchange authorization code for tokens
         const codeVerifier = sessionStorage.getItem('code_verifier');
         if (!codeVerifier) {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             error: 'Missing code verifier. Please try logging in again.',
             isLoading: false,
@@ -85,7 +92,11 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
         window.history.replaceState(null, '', window.location.pathname);
         sessionStorage.removeItem('code_verifier');
 
-        const tokenData = await exchangeCodeForToken(code, codeVerifier, redirectUri);
+        const tokenData = await exchangeCodeForToken(
+          code,
+          codeVerifier,
+          redirectUri
+        );
         saveTokens(tokenData);
 
         // Fetch and cache user ID
@@ -114,7 +125,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
       }
 
       // No valid auth
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isLoading: false,
       }));
@@ -168,7 +179,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
   }, [onLogout]);
 
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
     clearTokens();
   }, []);
 
@@ -180,11 +191,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
     getAccessToken: getValidAccessToken,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

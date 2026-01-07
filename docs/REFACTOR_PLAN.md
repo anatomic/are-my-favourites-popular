@@ -19,7 +19,8 @@ No tests. None. A "2.0.0" release with absolutely no test files. No Jest, no Vit
 
 ### 2. God Component Anti-Pattern (`src/App.jsx`)
 
-App.jsx does *everything*:
+App.jsx does _everything_:
+
 - OAuth callback handling
 - Token management
 - Token refresh logic
@@ -69,6 +70,7 @@ Module-level mutable state to "prevent StrictMode from creating multiple players
 ### 6. No State Management
 
 Props drilled through 4+ levels:
+
 - `App` → `Dashboard` → `Stats` → individual list items
 - `getAccessToken` prop passed everywhere
 
@@ -79,9 +81,9 @@ Use React Context or a state manager. This prop drilling creates tight coupling.
 ```javascript
 // Dashboard.jsx:75-258 - 183 lines of useEffect
 useEffect(() => {
-  select(svgRef.current).selectAll('*').remove();  // Nuke and repave
+  select(svgRef.current).selectAll('*').remove(); // Nuke and repave
   // ... 180 more lines of D3
-}, [tracks, maxWidth, maxHeight, /* 7 more deps */]);
+}, [tracks, maxWidth, maxHeight /* 7 more deps */]);
 ```
 
 On every render when any dependency changes, you destroy the entire SVG and rebuild it from scratch. This is horribly inefficient and loses any D3 transitions. Consider react-d3-library, visx, or at minimum, break this into smaller effects.
@@ -114,6 +116,7 @@ const POLL_INTERVAL = 1000; // Poll external playback state every second
 ```
 
 Polling Spotify's API every second, forever, while the tab is open. This:
+
 - Wastes user bandwidth
 - Hammers Spotify's servers
 - Drains mobile batteries
@@ -126,9 +129,9 @@ Users can have thousands of saved tracks. All track lists render every item:
 
 ```javascript
 // Stats.jsx:149-177
-{top20Popular.map((item, i) => (
-  <li key={i}>{/* Full DOM for each */}</li>
-))}
+{
+  top20Popular.map((item, i) => <li key={i}>{/* Full DOM for each */}</li>);
+}
 ```
 
 With 2,500 tracks and multiple sorted views, you're creating thousands of DOM nodes. Use react-window or react-virtualized.
@@ -143,7 +146,7 @@ for (let i = 0; i < uncachedIds.length; i += 50) {
 }
 ```
 
-With 1,000 artists and batches of 50, that's 20 *sequential* API calls. Use `Promise.all` with a reasonable concurrency limit.
+With 1,000 artists and batches of 50, that's 20 _sequential_ API calls. Use `Promise.all` with a reasonable concurrency limit.
 
 ---
 
@@ -152,12 +155,12 @@ With 1,000 artists and batches of 50, that's 20 *sequential* API calls. Use `Pro
 ### 12. Magic Numbers Everywhere
 
 ```javascript
-5 * 60 * 1000  // What is this? 5 minutes
-60 * 1000      // What is this? 1 minute
-50             // Spotify batch limit? Maybe?
-500            // Arbitrary delay
-300            // Another arbitrary delay
-1000, 2000, 3000  // Retry delays, no explanation
+5 * 60 * 1000; // What is this? 5 minutes
+60 * 1000; // What is this? 1 minute
+50; // Spotify batch limit? Maybe?
+500; // Arbitrary delay
+300; // Another arbitrary delay
+(1000, 2000, 3000); // Retry delays, no explanation
 ```
 
 Extract these to named constants. Future you will not remember what `5 * 60 * 1000` means.
@@ -184,6 +187,7 @@ Use a proper logger with log levels, or strip these in production builds.
 ### 15. Inconsistent Error Handling
 
 Some functions catch and handle errors:
+
 ```javascript
 } catch (err) {
   console.error('Auth error:', err);
@@ -191,6 +195,7 @@ Some functions catch and handle errors:
 ```
 
 Others silently swallow them:
+
 ```javascript
 } catch (e) {
   return false;
@@ -237,6 +242,7 @@ Using array index as key breaks React's reconciliation when items are reordered.
 ### 20. No Rate Limit Handling
 
 Spotify's API has rate limits. There's no:
+
 - Exponential backoff
 - Rate limit detection (429 responses)
 - Request queuing
@@ -298,23 +304,23 @@ Credit where due:
 
 ## Summary of Required Fixes
 
-| Priority | Issue | Effort |
-|----------|-------|--------|
-| P0 | Add tests | High |
-| P0 | Move tokens out of localStorage | Medium |
-| P0 | Add TypeScript | High |
-| P1 | Extract App.jsx into services/hooks | Medium |
-| P1 | Add error boundaries | Low |
-| P1 | Batch artist cache reads | Low |
-| P1 | Parallelize artist fetching | Low |
-| P2 | Add rate limit handling | Medium |
-| P2 | Reduce polling frequency | Low |
-| P2 | Virtualize long lists | Medium |
-| P2 | Remove magic numbers | Low |
-| P2 | Strip console statements | Low |
-| P3 | Refactor D3 integration | High |
-| P3 | Consistent CSS naming | Medium |
-| P3 | Add proper state management | Medium |
+| Priority | Issue                               | Effort |
+| -------- | ----------------------------------- | ------ |
+| P0       | Add tests                           | High   |
+| P0       | Move tokens out of localStorage     | Medium |
+| P0       | Add TypeScript                      | High   |
+| P1       | Extract App.jsx into services/hooks | Medium |
+| P1       | Add error boundaries                | Low    |
+| P1       | Batch artist cache reads            | Low    |
+| P1       | Parallelize artist fetching         | Low    |
+| P2       | Add rate limit handling             | Medium |
+| P2       | Reduce polling frequency            | Low    |
+| P2       | Virtualize long lists               | Medium |
+| P2       | Remove magic numbers                | Low    |
+| P2       | Strip console statements            | Low    |
+| P3       | Refactor D3 integration             | High   |
+| P3       | Consistent CSS naming               | Medium |
+| P3       | Add proper state management         | Medium |
 
 ---
 
@@ -331,29 +337,37 @@ Credit where due:
 ## PR 1: Foundation (Tests + TypeScript)
 
 ### 1.1 Add Vitest + Testing Infrastructure
+
 **Files to create:**
+
 - `vitest.config.js`
 - `src/test/setup.ts`
 - Update `package.json` with test scripts
 
 **Changes:**
+
 ```bash
 npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom @testing-library/user-event msw
 ```
 
 ### 1.2 Add TypeScript
+
 **Files to modify/create:**
+
 - `tsconfig.json`
 - Rename all `.js`/`.jsx` → `.ts`/`.tsx`
 - Add type definitions for Spotify API responses
 
 **Changes:**
+
 ```bash
 npm install -D typescript @types/react @types/react-dom @types/d3
 ```
 
 ### 1.3 Create Type Definitions
+
 **File to create:** `src/types/spotify.ts`
+
 - `SpotifyTrack`, `SpotifyArtist`, `SpotifyAlbum`
 - `SavedTrack`, `ArtistMap`
 - `TokenData`, `PlayerState`
@@ -364,20 +378,25 @@ npm install -D typescript @types/react @types/react-dom @types/d3
 ## PR 2: Security Fixes
 
 ### 2.1 Token Storage Refactor
+
 **File:** `src/auth.ts` (was auth.js)
 
 **Current (insecure):**
+
 ```javascript
 localStorage.setItem('access_token', tokenData.access_token);
 ```
 
 **Fix:** Use sessionStorage for access_token, keep refresh_token in localStorage with additional protections:
+
 - Access token → sessionStorage (cleared on tab close)
 - Add token refresh mutex to prevent race conditions
 - Consider encrypting refresh token at rest
 
 ### 2.2 Extract CLIENT_ID to Proper Config
+
 **File:** `src/config.ts`
+
 ```typescript
 export const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 if (!SPOTIFY_CLIENT_ID) {
@@ -386,6 +405,7 @@ if (!SPOTIFY_CLIENT_ID) {
 ```
 
 **File:** `.env.example`
+
 ```
 VITE_SPOTIFY_CLIENT_ID=your_client_id_here
 ```
@@ -395,7 +415,9 @@ VITE_SPOTIFY_CLIENT_ID=your_client_id_here
 ## PR 3: Architecture Refactor
 
 ### 3.1 Extract Auth Logic from App.jsx
+
 **Files to create:**
+
 - `src/hooks/useAuth.ts` - Token management, refresh logic
 - `src/services/authService.ts` - PKCE utilities, token exchange
 - `src/contexts/AuthContext.tsx` - Auth state provider
@@ -403,20 +425,26 @@ VITE_SPOTIFY_CLIENT_ID=your_client_id_here
 **Result:** App.tsx becomes ~50 lines instead of 337
 
 ### 3.2 Extract Data Fetching
+
 **Files to create:**
+
 - `src/hooks/useSpotifyTracks.ts` - Track fetching + caching
 - `src/hooks/useSpotifyArtists.ts` - Artist fetching + caching
 - `src/services/spotifyApi.ts` - API client with rate limiting
 
 ### 3.3 Add React Context
+
 **Files to create:**
+
 - `src/contexts/PlayerContext.tsx` - Player state
 - `src/contexts/TracksContext.tsx` - Tracks data
 
 ### 3.4 Add Error Boundaries
+
 **File to create:** `src/components/ErrorBoundary.tsx`
 
 Wrap major sections:
+
 - Dashboard
 - Player
 - Stats
@@ -426,9 +454,11 @@ Wrap major sections:
 ## PR 4: Performance Fixes
 
 ### 4.1 Batch Cache Reads
+
 **File:** `src/cache/SpotifyCache.ts`
 
 **Before:**
+
 ```javascript
 for (const artistId of artistIds) {
   const cached = await this._cacheService.get(STORES.ARTISTS, artistId);
@@ -436,6 +466,7 @@ for (const artistId of artistIds) {
 ```
 
 **After:**
+
 ```typescript
 async getCachedArtists(artistIds: string[]): Promise<CacheResult> {
   const results = await this._cacheService.getMany(STORES.ARTISTS, artistIds);
@@ -446,10 +477,12 @@ async getCachedArtists(artistIds: string[]): Promise<CacheResult> {
 Add `getMany` method to CacheService and adapters.
 
 ### 4.2 Parallelize Artist Fetching
+
 **File:** `src/services/spotifyApi.ts`
 
 **Before:** Sequential batches
 **After:**
+
 ```typescript
 async fetchArtistsBatch(artistIds: string[], concurrency = 3): Promise<Artist[]> {
   const batches = chunk(artistIds, 50);
@@ -458,6 +491,7 @@ async fetchArtistsBatch(artistIds: string[], concurrency = 3): Promise<Artist[]>
 ```
 
 ### 4.3 Smart Polling
+
 **File:** `src/hooks/useSpotifyPlayer.ts`
 
 - Poll at 1s when playing
@@ -466,6 +500,7 @@ async fetchArtistsBatch(artistIds: string[], concurrency = 3): Promise<Artist[]>
 - Use Visibility API to pause/resume
 
 ### 4.4 Virtualize Lists
+
 **Files to modify:** `src/components/Stats.tsx`
 
 ```bash
@@ -479,6 +514,7 @@ Add virtualized rendering for Top 20 lists (and future expansion to show all tra
 ## PR 5: Code Quality
 
 ### 5.1 Extract Constants
+
 **File to create:** `src/constants/index.ts`
 
 ```typescript
@@ -499,6 +535,7 @@ export const PLAYER = {
 ```
 
 ### 5.2 Add Logger
+
 **File to create:** `src/utils/logger.ts`
 
 ```typescript
@@ -515,11 +552,13 @@ export const logger = {
 Replace all `console.*` calls with `logger.*`.
 
 ### 5.3 Remove Dead Code
+
 - Delete `src/components/playlists.css`
 - Remove unused `chartWidth`/`chartHeight` from useMemo deps
 - Clean up unused imports
 
 ### 5.4 Standardize Error Handling
+
 **File to create:** `src/utils/errors.ts`
 
 ```typescript
@@ -541,6 +580,7 @@ export class RateLimitError extends SpotifyApiError {
 ```
 
 ### 5.5 Add Rate Limiting
+
 **File:** `src/services/spotifyApi.ts`
 
 Handle 429 responses with exponential backoff and respect `Retry-After` header.
@@ -550,14 +590,17 @@ Handle 429 responses with exponential backoff and respect `Retry-After` header.
 ## PR 6: CSS Cleanup
 
 ### 6.1 Standardize BEM Naming
+
 Adopt pattern: `[block]__[element]--[modifier]`
 
 **Renames needed:**
+
 - `.btn--primary` → Keep as-is (it's the base)
 - `.player-btn--primary` → `.player__btn--primary`
 - `.stats-link--artist` → `.stats__link--artist`
 
 ### 6.2 Use CSS Variables Consistently
+
 Replace all hardcoded colors in JS with CSS variable references:
 
 ```javascript
@@ -575,9 +618,11 @@ const COLORS = {
 ## PR 7: D3 Refactor
 
 ### 7.1 Split D3 Effect
+
 **File:** `src/components/Dashboard.tsx`
 
 Break 183-line useEffect into:
+
 - `useChartScales.ts` - Scale calculations
 - `useChartAxes.ts` - Axis rendering
 - `useChartDataPoints.ts` - Circle rendering
@@ -619,20 +664,21 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 
 ## Progress Tracker
 
-| PR | Title | Status | Branch |
-|----|-------|--------|--------|
-| 1 | Foundation (Tests + TypeScript) | 🔄 In Progress | `refactor/1-foundation` |
-| 2 | Security Fixes | ⬜ Not started | `refactor/2-security` |
-| 3 | Architecture Refactor | ⬜ Not started | `refactor/3-architecture` |
-| 4 | Performance Fixes | ⬜ Not started | `refactor/4-performance` |
-| 5 | Code Quality | ⬜ Not started | `refactor/5-code-quality` |
-| 6 | CSS Cleanup | ⬜ Not started | `refactor/6-css` |
-| 7 | D3 Refactor | ⬜ Not started | `refactor/7-d3` |
-| 8 | Write Tests | ⬜ Not started | `refactor/8-tests` |
+| PR  | Title                           | Status         | Branch                    |
+| --- | ------------------------------- | -------------- | ------------------------- |
+| 1   | Foundation (Tests + TypeScript) | 🔄 In Progress | `refactor/1-foundation`   |
+| 2   | Security Fixes                  | ⬜ Not started | `refactor/2-security`     |
+| 3   | Architecture Refactor           | ⬜ Not started | `refactor/3-architecture` |
+| 4   | Performance Fixes               | ⬜ Not started | `refactor/4-performance`  |
+| 5   | Code Quality                    | ⬜ Not started | `refactor/5-code-quality` |
+| 6   | CSS Cleanup                     | ⬜ Not started | `refactor/6-css`          |
+| 7   | D3 Refactor                     | ⬜ Not started | `refactor/7-d3`           |
+| 8   | Write Tests                     | ⬜ Not started | `refactor/8-tests`        |
 
 ### Detailed Checklist
 
 **PR 1: Foundation**
+
 - [ ] Install Vitest + testing deps
 - [ ] Create vitest.config.js
 - [ ] Create src/test/setup.ts
@@ -644,6 +690,7 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 - [ ] Verify app still works
 
 **PR 2: Security**
+
 - [ ] Move access_token to sessionStorage
 - [ ] Add token refresh mutex
 - [ ] Create src/config.ts for CLIENT_ID
@@ -651,6 +698,7 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 - [ ] Update vite.config.js to use VITE_SPOTIFY_CLIENT_ID
 
 **PR 3: Architecture**
+
 - [ ] Create src/services/authService.ts
 - [ ] Create src/hooks/useAuth.ts
 - [ ] Create src/contexts/AuthContext.tsx
@@ -664,6 +712,7 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 - [ ] Remove module-level state from useSpotifyPlayer
 
 **PR 4: Performance**
+
 - [ ] Add getMany to cache adapters
 - [ ] Batch artist cache reads
 - [ ] Add concurrent artist fetching
@@ -673,10 +722,11 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 - [ ] Virtualize Stats lists
 
 **PR 5: Code Quality**
+
 - [ ] Create src/constants/index.ts
 - [ ] Replace all magic numbers
 - [ ] Create src/utils/logger.ts
-- [ ] Replace all console.* calls
+- [ ] Replace all console.\* calls
 - [ ] Delete playlists.css
 - [ ] Remove unused deps from useMemo
 - [ ] Create src/utils/errors.ts
@@ -684,16 +734,19 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 - [ ] Add exponential backoff
 
 **PR 6: CSS Cleanup**
+
 - [ ] Audit all class names
 - [ ] Standardize BEM naming
 - [ ] Replace hardcoded colors with CSS vars
 - [ ] Clean up unused CSS
 
 **PR 7: D3 Refactor**
+
 - [ ] Split useEffect into focused hooks
 - [ ] (Optional) Evaluate visx migration
 
 **PR 8: Tests**
+
 - [ ] Write auth tests
 - [ ] Write hook tests
 - [ ] Write component tests
@@ -706,6 +759,7 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 ## Files to Modify/Create Summary
 
 ### New Files (~25)
+
 - `tsconfig.json`
 - `vitest.config.js`
 - `.env.example`
@@ -727,13 +781,16 @@ Target: 80%+ coverage on business logic, 60%+ overall.
 - ~8 test files
 
 ### Files to Rename (→ TypeScript)
+
 - All `.js` → `.ts`
 - All `.jsx` → `.tsx`
 
 ### Files to Delete
+
 - `src/components/playlists.css`
 
 ### Major Refactors
+
 - `src/App.tsx` - Reduce from 337 to ~50 lines
 - `src/hooks/useSpotifyPlayer.ts` - Remove module-level state
 - `src/components/Dashboard.tsx` - Split D3 effect

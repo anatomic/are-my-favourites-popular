@@ -5,7 +5,7 @@
 
 export const CACHE_CONFIG = {
   // Time-to-live values (in milliseconds)
-  TRACK_CACHE_TTL: 10 * 60 * 1000,       // 10 minutes - adjust as needed
+  TRACK_CACHE_TTL: 10 * 60 * 1000, // 10 minutes - adjust as needed
   ARTIST_CACHE_TTL: 24 * 60 * 60 * 1000, // 24 hours - artist metadata rarely changes
 
   // Storage configuration
@@ -16,11 +16,12 @@ export const CACHE_CONFIG = {
   // Store names
   STORES: {
     TRACKS: 'tracks',
-    ARTISTS: 'artists'
+    ARTISTS: 'artists',
   },
 
   // localStorage keys (prefixed to avoid conflicts)
-  LOCALSTORAGE_PREFIX: 'sfc_' // spotify-favorites-cache
+  LOCALSTORAGE_PREFIX: 'sfc_', // spotify-favorites-cache
 } as const;
 
-export type StoreNames = typeof CACHE_CONFIG.STORES[keyof typeof CACHE_CONFIG.STORES];
+export type StoreNames =
+  (typeof CACHE_CONFIG.STORES)[keyof typeof CACHE_CONFIG.STORES];

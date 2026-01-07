@@ -80,7 +80,9 @@ export function getExpiresAt(): number | null {
 /**
  * Check if token is expired or expiring soon
  */
-export function isTokenExpiringSoon(bufferMs: number = AUTH.TOKEN_REFRESH_BUFFER_MS): boolean {
+export function isTokenExpiringSoon(
+  bufferMs: number = AUTH.TOKEN_REFRESH_BUFFER_MS
+): boolean {
   const expiresAt = getExpiresAt();
   if (!expiresAt) return true;
   return expiresAt < Date.now() + bufferMs;
@@ -159,7 +161,9 @@ export async function getValidAccessToken(): Promise<string> {
     } catch (error) {
       // Refresh failed - clear tokens and throw auth error
       clearTokens();
-      const authError = new Error('Session expired. Please log in again.') as Error & { status?: number };
+      const authError = new Error(
+        'Session expired. Please log in again.'
+      ) as Error & { status?: number };
       authError.status = 401;
       throw authError;
     }
@@ -167,7 +171,9 @@ export async function getValidAccessToken(): Promise<string> {
 
   // No access token and no refresh token
   if (!accessToken) {
-    const authError = new Error('No access token available. Please log in.') as Error & { status?: number };
+    const authError = new Error(
+      'No access token available. Please log in.'
+    ) as Error & { status?: number };
     authError.status = 401;
     throw authError;
   }

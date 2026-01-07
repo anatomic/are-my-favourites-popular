@@ -6,7 +6,7 @@ import './stats.css';
 
 // Convert string to title case
 function toTitleCase(str: string): string {
-  return str.replace(/\b\w/g, char => char.toUpperCase());
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 // Internal types for stats calculations
@@ -55,7 +55,6 @@ type SortMode = 'count' | 'popularity';
 // See src/styles/variables.css for the source of truth
 
 function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
-
   // Top 20 most popular songs
   const top20Popular = useMemo((): SavedTrack[] => {
     return [...tracks]
@@ -81,7 +80,13 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
       const year = new Date(t.added_at).getFullYear();
       t.track.artists.forEach((a: SpotifyArtist) => {
         if (!counts[a.id]) {
-          counts[a.id] = { id: a.id, name: a.name, count: 0, totalPop: 0, years: new Set() };
+          counts[a.id] = {
+            id: a.id,
+            name: a.name,
+            count: 0,
+            totalPop: 0,
+            years: new Set(),
+          };
         }
         counts[a.id].count++;
         counts[a.id].totalPop += t.track.popularity;
@@ -89,16 +94,20 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
       });
     });
     return Object.values(counts)
-      .map((a: ArtistStats): ArtistStatsWithAvg => ({
-        id: a.id,
-        name: a.name,
-        count: a.count,
-        avgPopularity: Math.round(a.totalPop / a.count),
-        years: [...a.years].sort((x, y) => x - y),
-      }))
-      .sort((a, b) => artistSort === 'popularity'
-        ? b.avgPopularity - a.avgPopularity
-        : b.count - a.count)
+      .map(
+        (a: ArtistStats): ArtistStatsWithAvg => ({
+          id: a.id,
+          name: a.name,
+          count: a.count,
+          avgPopularity: Math.round(a.totalPop / a.count),
+          years: [...a.years].sort((x, y) => x - y),
+        })
+      )
+      .sort((a, b) =>
+        artistSort === 'popularity'
+          ? b.avgPopularity - a.avgPopularity
+          : b.count - a.count
+      )
       .slice(0, 20);
   }, [tracks, artistSort]);
 
@@ -106,7 +115,10 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
   const genreStats = useMemo((): GenreStats[] => {
     if (!artistMap || artistMap.size === 0) return [];
 
-    const stats: Record<string, { count: number; totalPop: number; years: Set<number> }> = {};
+    const stats: Record<
+      string,
+      { count: number; totalPop: number; years: Set<number> }
+    > = {};
     tracks.forEach((t: SavedTrack) => {
       const year = new Date(t.added_at).getFullYear();
       t.track.artists.forEach((a: SpotifyArtist) => {
@@ -125,15 +137,19 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
     });
 
     return Object.entries(stats)
-      .map(([genre, data]): GenreStats => ({
-        genre,
-        count: data.count,
-        avgPopularity: Math.round(data.totalPop / data.count),
-        years: [...data.years].sort((x, y) => x - y),
-      }))
-      .sort((a, b) => genreSort === 'popularity'
-        ? b.avgPopularity - a.avgPopularity
-        : b.count - a.count)
+      .map(
+        ([genre, data]): GenreStats => ({
+          genre,
+          count: data.count,
+          avgPopularity: Math.round(data.totalPop / data.count),
+          years: [...data.years].sort((x, y) => x - y),
+        })
+      )
+      .sort((a, b) =>
+        genreSort === 'popularity'
+          ? b.avgPopularity - a.avgPopularity
+          : b.count - a.count
+      )
       .slice(0, 20);
   }, [tracks, artistMap, genreSort]);
 
@@ -159,8 +175,12 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
 
     // Calculate rankings for highlights
     const sortedByCount = [...years].sort((a, b) => b.count - a.count);
-    const sortedByPop = [...years].sort((a, b) => b.avgPopularity - a.avgPopularity);
-    const sortedByLowPop = [...years].sort((a, b) => a.avgPopularity - b.avgPopularity);
+    const sortedByPop = [...years].sort(
+      (a, b) => b.avgPopularity - a.avgPopularity
+    );
+    const sortedByLowPop = [...years].sort(
+      (a, b) => a.avgPopularity - b.avgPopularity
+    );
 
     // Calculate year-over-year growth
     const withGrowth = years.map((y, i) => ({
@@ -170,13 +190,18 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
     const sortedByGrowth = [...withGrowth].sort((a, b) => b.growth - a.growth);
 
     // Add ranking info to each year
-    return withGrowth.map((y): YearlySummaryItem => ({
-      ...y,
-      countRank: sortedByCount.findIndex(s => s.year === y.year) + 1,
-      popRank: sortedByPop.findIndex(s => s.year === y.year) + 1,
-      lowPopRank: sortedByLowPop.findIndex(s => s.year === y.year) + 1,
-      growthRank: y.growth > 0 ? sortedByGrowth.findIndex(s => s.year === y.year) + 1 : 999,
-    }));
+    return withGrowth.map(
+      (y): YearlySummaryItem => ({
+        ...y,
+        countRank: sortedByCount.findIndex((s) => s.year === y.year) + 1,
+        popRank: sortedByPop.findIndex((s) => s.year === y.year) + 1,
+        lowPopRank: sortedByLowPop.findIndex((s) => s.year === y.year) + 1,
+        growthRank:
+          y.growth > 0
+            ? sortedByGrowth.findIndex((s) => s.year === y.year) + 1
+            : 999,
+      })
+    );
   }, [tracks]);
 
   return (
@@ -250,7 +275,9 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                     ))}
                   </span>
                 </span>
-                <span className="stats-value stats-value--niche">{item.track.popularity}</span>
+                <span className="stats-value stats-value--niche">
+                  {item.track.popularity}
+                </span>
               </li>
             ))}
           </ol>
@@ -292,7 +319,10 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                   </span>
                 </span>
                 <span className="stats-value">
-                  {artist.count} · <span className="stats-popularity">{artist.avgPopularity}</span>
+                  {artist.count} ·{' '}
+                  <span className="stats-popularity">
+                    {artist.avgPopularity}
+                  </span>
                 </span>
               </li>
             ))}
@@ -324,12 +354,11 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                 <li key={i}>
                   <span className="stats-track">
                     <strong>{toTitleCase(g.genre)}</strong>
-                    <span className="stats-artist">
-                      ({g.years.join(', ')})
-                    </span>
+                    <span className="stats-artist">({g.years.join(', ')})</span>
                   </span>
                   <span className="stats-value">
-                    {g.count} · <span className="stats-popularity">{g.avgPopularity}</span>
+                    {g.count} ·{' '}
+                    <span className="stats-popularity">{g.avgPopularity}</span>
                   </span>
                 </li>
               ))}
@@ -338,7 +367,6 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
             <p className="stats-loading">Loading genre data...</p>
           )}
         </div>
-
       </div>
 
       {/* Yearly Summary */}
@@ -349,16 +377,33 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
             <thead>
               <tr>
                 <th className="stats-yearly-label">Year</th>
-                {yearlySummary.map(y => {
+                {yearlySummary.map((y) => {
                   // Collect all highlights for this year
                   const highlights = [];
-                  if (y.countRank === 1) highlights.push({ color: cssColors.highlightBusiest, title: 'Most tracks added' });
-                  if (y.growthRank === 1 && y.growth > 0) highlights.push({ color: cssColors.highlightGrowth, title: `Biggest growth (+${y.growth})` });
-                  if (y.popRank === 1) highlights.push({ color: cssColors.highlightPopular, title: 'Most popular' });
-                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push({ color: cssColors.highlightNiche, title: 'Most niche' });
+                  if (y.countRank === 1)
+                    highlights.push({
+                      color: cssColors.highlightBusiest,
+                      title: 'Most tracks added',
+                    });
+                  if (y.growthRank === 1 && y.growth > 0)
+                    highlights.push({
+                      color: cssColors.highlightGrowth,
+                      title: `Biggest growth (+${y.growth})`,
+                    });
+                  if (y.popRank === 1)
+                    highlights.push({
+                      color: cssColors.highlightPopular,
+                      title: 'Most popular',
+                    });
+                  if (y.lowPopRank === 1 && yearlySummary.length > 1)
+                    highlights.push({
+                      color: cssColors.highlightNiche,
+                      title: 'Most niche',
+                    });
 
-                  const yearColor = highlights.length > 0 ? highlights[0].color : undefined;
-                  const yearTitle = highlights.map(h => h.title).join(', ');
+                  const yearColor =
+                    highlights.length > 0 ? highlights[0].color : undefined;
+                  const yearTitle = highlights.map((h) => h.title).join(', ');
 
                   return (
                     <th
@@ -375,13 +420,20 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
             <tbody>
               <tr>
                 <td className="stats-yearly-label">Tracks Added</td>
-                {yearlySummary.map(y => {
+                {yearlySummary.map((y) => {
                   const highlights = [];
-                  if (y.countRank === 1) highlights.push(cssColors.highlightBusiest);
-                  if (y.growthRank === 1 && y.growth > 0) highlights.push(cssColors.highlightGrowth);
-                  const bgColor = highlights[0] ? `${highlights[0]}15` : undefined;
+                  if (y.countRank === 1)
+                    highlights.push(cssColors.highlightBusiest);
+                  if (y.growthRank === 1 && y.growth > 0)
+                    highlights.push(cssColors.highlightGrowth);
+                  const bgColor = highlights[0]
+                    ? `${highlights[0]}15`
+                    : undefined;
                   return (
-                    <td key={y.year} style={bgColor ? { backgroundColor: bgColor } : undefined}>
+                    <td
+                      key={y.year}
+                      style={bgColor ? { backgroundColor: bgColor } : undefined}
+                    >
                       {y.count}
                     </td>
                   );
@@ -389,13 +441,20 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
               </tr>
               <tr>
                 <td className="stats-yearly-label">Avg Popularity</td>
-                {yearlySummary.map(y => {
+                {yearlySummary.map((y) => {
                   const highlights = [];
-                  if (y.popRank === 1) highlights.push(cssColors.highlightPopular);
-                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push(cssColors.highlightNiche);
-                  const bgColor = highlights[0] ? `${highlights[0]}15` : undefined;
+                  if (y.popRank === 1)
+                    highlights.push(cssColors.highlightPopular);
+                  if (y.lowPopRank === 1 && yearlySummary.length > 1)
+                    highlights.push(cssColors.highlightNiche);
+                  const bgColor = highlights[0]
+                    ? `${highlights[0]}15`
+                    : undefined;
                   return (
-                    <td key={y.year} style={bgColor ? { backgroundColor: bgColor } : undefined}>
+                    <td
+                      key={y.year}
+                      style={bgColor ? { backgroundColor: bgColor } : undefined}
+                    >
                       {y.avgPopularity}
                     </td>
                   );
@@ -405,19 +464,31 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
           </table>
           <div className="stats-yearly-legend">
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightBusiest }} />
+              <span
+                className="indicator-sample"
+                style={{ backgroundColor: cssColors.highlightBusiest }}
+              />
               Most tracks
             </span>
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightGrowth }} />
+              <span
+                className="indicator-sample"
+                style={{ backgroundColor: cssColors.highlightGrowth }}
+              />
               Biggest growth
             </span>
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightPopular }} />
+              <span
+                className="indicator-sample"
+                style={{ backgroundColor: cssColors.highlightPopular }}
+              />
               Most popular
             </span>
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightNiche }} />
+              <span
+                className="indicator-sample"
+                style={{ backgroundColor: cssColors.highlightNiche }}
+              />
               Most niche
             </span>
           </div>

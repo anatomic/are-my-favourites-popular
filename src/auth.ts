@@ -4,12 +4,17 @@ import { SPOTIFY_CLIENT_ID, SPOTIFY_AUTH_URL } from './config';
 import type { SpotifyTokenResponse } from './types/spotify';
 
 export function generateCodeVerifier(length = 64): string {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const possible =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   const randomValues = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(randomValues, (x) => possible[x % possible.length]).join('');
+  return Array.from(randomValues, (x) => possible[x % possible.length]).join(
+    ''
+  );
 }
 
-export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
+export async function generateCodeChallenge(
+  codeVerifier: string
+): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(codeVerifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
@@ -56,7 +61,9 @@ export async function exchangeCodeForToken(
   return response.json();
 }
 
-export async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenResponse> {
+export async function refreshAccessToken(
+  refreshToken: string
+): Promise<SpotifyTokenResponse> {
   const response = await fetch(`${SPOTIFY_AUTH_URL}/api/token`, {
     method: 'POST',
     headers: {

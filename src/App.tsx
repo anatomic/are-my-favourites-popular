@@ -6,8 +6,15 @@
  */
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useSpotifyData, clearUserCache, clearAllCaches } from './hooks/useSpotifyData';
-import { ErrorBoundary, SectionErrorBoundary } from './components/ErrorBoundary';
+import {
+  useSpotifyData,
+  clearUserCache,
+  clearAllCaches,
+} from './hooks/useSpotifyData';
+import {
+  ErrorBoundary,
+  SectionErrorBoundary,
+} from './components/ErrorBoundary';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 
@@ -68,7 +75,10 @@ function AppContent() {
       <div className="error">
         <h1>Something went wrong</h1>
         <p>{dataError}</p>
-        <button onClick={() => window.location.reload()} className="btn btn--primary">
+        <button
+          onClick={() => window.location.reload()}
+          className="btn btn--primary"
+        >
           Refresh
         </button>
       </div>

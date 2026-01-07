@@ -21,7 +21,10 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -53,10 +56,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <p className="error-boundary__message">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
-            <button
-              onClick={this.handleRetry}
-              className="btn btn--primary"
-            >
+            <button onClick={this.handleRetry} className="btn btn--primary">
               Try Again
             </button>
           </div>
@@ -76,7 +76,10 @@ interface SectionErrorBoundaryProps {
   section: string;
 }
 
-export function SectionErrorBoundary({ children, section }: SectionErrorBoundaryProps): ReactNode {
+export function SectionErrorBoundary({
+  children,
+  section,
+}: SectionErrorBoundaryProps): ReactNode {
   return (
     <ErrorBoundary
       fallback={
