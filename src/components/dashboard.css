@@ -15,6 +15,16 @@
   margin-bottom: var(--space-sm);
 }
 
+.dashboard-header .subtitle {
+  margin-bottom: var(--space-xs);
+}
+
+.dashboard-header .helper-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
 /* Chart Wrapper - container styles are in graph.css */
 .chart-wrapper {
   position: relative;
