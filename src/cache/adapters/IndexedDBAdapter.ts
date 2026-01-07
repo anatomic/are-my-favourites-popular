@@ -253,6 +253,51 @@ export class IndexedDBAdapter {
   }
 
   /**
+   * Get multiple values by keys in a single transaction
+   * Much faster than multiple individual get() calls
+   */
+  async getMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    const results = new Map<string, T>();
+
+    if (keys.length === 0) {
+      return results;
+    }
+
+    try {
+      const db = await this._ensureDb();
+
+      return new Promise((resolve) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        let completed = 0;
+
+        for (const key of keys) {
+          const request = store.get(key);
+
+          request.onsuccess = () => {
+            if (request.result) {
+              results.set(key, request.result as T);
+            }
+            completed++;
+            if (completed === keys.length) {
+              resolve(results);
+            }
+          };
+
+          request.onerror = () => {
+            completed++;
+            if (completed === keys.length) {
+              resolve(results);
+            }
+          };
+        }
+      });
+    } catch {
+      return results;
+    }
+  }
+
+  /**
    * Close the database connection
    */
   close(): void {

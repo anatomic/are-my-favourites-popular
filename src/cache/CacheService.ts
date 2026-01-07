@@ -169,6 +169,21 @@ export class CacheService {
   }
 
   /**
+   * Get multiple values by keys in a single batch operation
+   * Much faster than calling get() multiple times
+   */
+  async getMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    await this._ensureInit();
+
+    try {
+      return await this._activeAdapter!.getMany<T>(storeName, keys);
+    } catch {
+      console.warn('CacheService: getMany failed, trying fallback');
+      return this._tryFallbackGetMany<T>(storeName, keys);
+    }
+  }
+
+  /**
    * Check if a cached entry has expired
    */
   isExpired(cachedAt: number | undefined, ttl: number): boolean {
@@ -200,6 +215,32 @@ export class CacheService {
     }
 
     return null;
+  }
+
+  /**
+   * Try fallback adapters for getMany operations
+   */
+  private async _tryFallbackGetMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    // Try localStorage if we're not already using it
+    if (this._activeAdapter !== this._localStorage) {
+      try {
+        const result = await this._localStorage.getMany<T>(storeName, keys);
+        if (result.size > 0) return result;
+      } catch {
+        // Continue to memory
+      }
+    }
+
+    // Try memory as last resort
+    if (this._activeAdapter !== this._memory) {
+      try {
+        return await this._memory.getMany<T>(storeName, keys);
+      } catch {
+        // Nothing more to try
+      }
+    }
+
+    return new Map();
   }
 
   /**

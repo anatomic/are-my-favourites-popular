@@ -163,4 +163,20 @@ export class LocalStorageAdapter {
 
     return values;
   }
+
+  /**
+   * Get multiple values by keys
+   */
+  async getMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    const results = new Map<string, T>();
+
+    for (const key of keys) {
+      const value = await this.get<T>(storeName, key);
+      if (value !== null) {
+        results.set(key, value);
+      }
+    }
+
+    return results;
+  }
 }

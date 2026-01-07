@@ -118,6 +118,8 @@ class SpotifyCache {
    * Get cached artists by their IDs
    * Returns a Map of artistId -> artistObject for cached artists
    * and a list of artist IDs that need to be fetched
+   *
+   * Uses batch read for performance - single transaction instead of N reads
    */
   async getCachedArtists(artistIds: string[]): Promise<CachedArtistsResult> {
     await this._ensureInit();
@@ -125,8 +127,15 @@ class SpotifyCache {
     const cachedArtists: ArtistMap = new Map();
     const uncachedIds: string[] = [];
 
+    // Batch read all artists in a single transaction
+    const cachedEntries = await this._cacheService.getMany<ArtistCacheEntry>(
+      STORES.ARTISTS,
+      artistIds
+    );
+
+    // Process results and check expiration
     for (const artistId of artistIds) {
-      const cached = await this._cacheService.get<ArtistCacheEntry>(STORES.ARTISTS, artistId);
+      const cached = cachedEntries.get(artistId);
 
       if (cached && !this._cacheService.isExpired(cached.cachedAt, ARTIST_CACHE_TTL)) {
         cachedArtists.set(artistId, cached.artist);
