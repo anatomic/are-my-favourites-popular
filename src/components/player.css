@@ -309,7 +309,7 @@
 
 /* Error State */
 .player-error-message {
-  color: #ff6b6b;
+  color: var(--error-color);
   font-size: var(--font-size-sm);
 }
 

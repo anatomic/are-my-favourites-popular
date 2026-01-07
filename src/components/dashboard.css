@@ -15,11 +15,7 @@
   margin-bottom: var(--space-sm);
 }
 
-/* Chart Container */
-.chart-container {
-  margin: var(--space-lg) 0;
-}
-
+/* Chart Wrapper - container styles are in graph.css */
 .chart-wrapper {
   position: relative;
 }
@@ -58,23 +54,10 @@
   letter-spacing: 0.5px;
 }
 
-/* Tooltip enhancements */
-.tooltip-stat {
-  display: block;
-  margin-top: var(--space-xs);
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-}
-
+/* Tooltip text-green utility */
 .tooltip .text-green {
   color: var(--spotify-green);
   font-weight: var(--font-weight-bold);
-}
-
-/* Line label highlight */
-.line-label--highlight {
-  fill: var(--text-secondary);
-  font-weight: var(--font-weight-medium);
 }
 
 /* Dashboard Footer */
@@ -113,7 +96,7 @@
 
 .attribution:hover .heart-icon {
   opacity: 1;
-  color: #e05a5a;
+  color: var(--heart-color);
 }
 
 .powered-by-spotify {
