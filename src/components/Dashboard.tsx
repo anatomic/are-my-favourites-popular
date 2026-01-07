@@ -1,21 +1,22 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { select } from 'd3-selection';
-import { min, max, mean } from 'd3-array';
-import { scalePow, scaleTime, scaleLinear } from 'd3-scale';
-import { axisBottom, axisLeft } from 'd3-axis';
-import { timeYear } from 'd3-time';
-import { interpolateRgb } from 'd3-interpolate';
+import { mean, max } from 'd3-array';
 import Stats from './Stats';
 import Player from './Player';
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer';
+import { useChartConfig } from '../hooks/useChartConfig';
+import {
+  renderGradientDef,
+  renderGridLines,
+  renderAxes,
+  renderDataPoints,
+  renderLegend,
+  createTooltipContent,
+} from './chart';
 import type { DashboardProps, SavedTrack, SpotifyTrack } from '../types/spotify';
-import { cssColors } from '../utils/cssVariables';
 import './dashboard.css';
 import './graph.css';
-
-// Colors are loaded from CSS variables at runtime via cssColors
-// See src/styles/variables.css for the source of truth
 
 interface ChartStats {
   total: number;
@@ -28,20 +29,16 @@ interface ChartStats {
 function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardProps): ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1400) : 800;
-  const maxHeight = typeof window !== 'undefined' ? Math.min(window.innerHeight - 280, 500) : 400;
 
-  // Chart margins
-  const margin = { top: 40, right: 30, bottom: 50, left: 60 };
-  const chartWidth = maxWidth - margin.left - margin.right;
+  // Chart configuration (dimensions, scales, sorted data)
+  const chartConfig = useChartConfig(tracks);
 
-  // Calculate chart stats
+  // Calculate chart stats for display
   const chartStats = useMemo((): ChartStats | null => {
     if (!tracks || tracks.length === 0) return null;
     const avgPop = mean(tracks, (d: SavedTrack) => d.track.popularity) ?? 0;
     const maxPop = max(tracks, (d: SavedTrack) => d.track.popularity) ?? 0;
     const zeroCount = tracks.filter((d: SavedTrack) => d.track.popularity === 0).length;
-    // Find the track with highest popularity
     const topTrack = tracks.reduce((best: SavedTrack, curr: SavedTrack) =>
       curr.track.popularity > best.track.popularity ? curr : best
     , tracks[0]);
@@ -53,207 +50,87 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       topTrackId: topTrack.track.id,
     };
   }, [tracks]);
-  const chartHeight = maxHeight - margin.top - margin.bottom;
 
   // Spotify Web Playback SDK
   const player = useSpotifyPlayer(getAccessToken);
 
   // Play a track - SDK only (Premium required)
   const playTrack = useCallback(async (track: SpotifyTrack): Promise<void> => {
-    // Only play if SDK is ready and user has Premium
     if (!player.isReady || !player.isPremium) {
-      // Player component shows "Premium required" message
       return;
     }
-
     const trackUri = `spotify:track:${track.id}`;
     await player.play(trackUri);
   }, [player]);
 
+  // Tooltip event handlers
+  const handleMouseOver = useCallback((
+    event: MouseEvent,
+    track: SavedTrack,
+    popColor: string
+  ): void => {
+    const tooltip = tooltipRef.current;
+    const target = event.target as SVGCircleElement;
+
+    if (chartConfig) {
+      select(target)
+        .attr('opacity', 1)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2)
+        .attr('r', chartConfig.scales.radius(track.track.popularity) * 1.4);
+    }
+
+    if (tooltip) {
+      tooltip.innerHTML = createTooltipContent(track, popColor);
+      tooltip.style.opacity = '1';
+      tooltip.style.left = `${event.pageX + 15}px`;
+      tooltip.style.top = `${event.pageY - 10}px`;
+    }
+  }, [chartConfig]);
+
+  const handleMouseOut = useCallback((
+    _event: MouseEvent,
+    track: SavedTrack
+  ): void => {
+    const tooltip = tooltipRef.current;
+    const target = _event.target as SVGCircleElement;
+
+    if (chartConfig) {
+      select(target)
+        .attr('opacity', 0.75)
+        .attr('stroke', 'rgba(0,0,0,0.2)')
+        .attr('stroke-width', 0.5)
+        .attr('r', chartConfig.scales.radius(track.track.popularity));
+    }
+
+    if (tooltip) {
+      tooltip.style.opacity = '0';
+    }
+  }, [chartConfig]);
+
+  // Render the D3 chart
   useEffect(() => {
-    if (!tracks || !svgRef.current) return;
-
-    // Clear previous chart
-    select(svgRef.current).selectAll('*').remove();
-
-    const sortedTracks = [...tracks].sort(
-      (a, b) => new Date(a.added_at).getTime() - new Date(b.added_at).getTime()
-    );
+    if (!chartConfig || !svgRef.current) return;
 
     const svg = select(svgRef.current);
 
-    // Create gradient definition
-    const defs = svg.append('defs');
-    const gradient = defs.append('linearGradient')
-      .attr('id', 'popularityGradient')
-      .attr('x1', '0%')
-      .attr('y1', '100%')
-      .attr('x2', '0%')
-      .attr('y2', '0%');
+    // Clear previous chart
+    svg.selectAll('*').remove();
 
-    gradient.append('stop')
-      .attr('offset', '0%')
-      .attr('stop-color', cssColors.chartGradientLow);
-    gradient.append('stop')
-      .attr('offset', '100%')
-      .attr('stop-color', cssColors.chartGradientHigh);
+    // Render chart elements in order (back to front)
+    renderGradientDef(svg);
+    renderGridLines(svg, chartConfig);
+    renderAxes(svg, chartConfig);
+    renderDataPoints(svg, chartConfig, {
+      onClick: playTrack,
+      onMouseOver: handleMouseOver,
+      onMouseOut: handleMouseOut,
+    });
+    renderLegend(svg, chartConfig);
 
-    // Scales
-    const first = min(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
-    const last = max(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
-    const today = new Date();
-    const maxPop = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
+  }, [chartConfig, playTrack, handleMouseOver, handleMouseOut]);
 
-    const r = scalePow().exponent(1.5).domain([0, 100]).range([3, 18]);
-    const x = scaleTime()
-      .domain([first ?? today, (last ?? today) > today ? (last ?? today) : today])
-      .range([margin.left, maxWidth - margin.right])
-      .nice();
-    const y = scaleLinear()
-      .domain([0, Math.ceil(maxPop / 10) * 10]) // Round up to nearest 10
-      .range([maxHeight - margin.bottom, margin.top]);
-
-    // Color scale based on popularity
-    const colorScale = (popularity: number): string => {
-      const t = popularity / 100;
-      return interpolateRgb(cssColors.chartGradientLow, cssColors.chartGradientHigh)(t);
-    };
-
-    // Axes
-    const xAxis = axisBottom(x).ticks(timeYear.every(1));
-    const yAxis = axisLeft(y).ticks(5);
-
-    // Draw horizontal grid lines
-    const gridLines = [20, 40, 60, 80, 100].filter(v => v <= Math.ceil(maxPop / 10) * 10);
-    svg.selectAll('.grid-line')
-      .data(gridLines)
-      .enter()
-      .append('line')
-      .attr('class', 'grid-line')
-      .attr('x1', margin.left)
-      .attr('x2', maxWidth - margin.right)
-      .attr('y1', (d: number) => y(d))
-      .attr('y2', (d: number) => y(d))
-      .attr('stroke', cssColors.chartGrid)
-      .attr('stroke-width', 1);
-
-    // Draw axes
-    svg
-      .append('g')
-      .attr('class', 'x-axis')
-      .attr('transform', `translate(0,${maxHeight - margin.bottom})`)
-      .call(xAxis);
-
-    svg
-      .append('g')
-      .attr('class', 'y-axis')
-      .attr('transform', `translate(${margin.left},0)`)
-      .call(yAxis);
-
-    // Y-axis label
-    svg
-      .append('text')
-      .attr('class', 'axis-label')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -(maxHeight / 2))
-      .attr('y', 16)
-      .attr('text-anchor', 'middle')
-      .text('Popularity Score');
-
-    // Data points colored by popularity (top track highlighted in green)
-    svg
-      .selectAll('circle')
-      .data(sortedTracks)
-      .enter()
-      .append('circle')
-      .attr('r', (d: SavedTrack) => d.track.popularity === maxPop ? r(d.track.popularity) * 1.2 : r(d.track.popularity))
-      .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
-      .attr('cy', (d: SavedTrack) => y(d.track.popularity))
-      .attr('fill', (d: SavedTrack) => d.track.popularity === maxPop ? cssColors.spotifyGreen : colorScale(d.track.popularity))
-      .attr('opacity', (d: SavedTrack) => d.track.popularity === maxPop ? 1 : 0.75)
-      .attr('stroke', (d: SavedTrack) => d.track.popularity === maxPop ? cssColors.spotifyGreenLight : 'rgba(0,0,0,0.2)')
-      .attr('stroke-width', (d: SavedTrack) => d.track.popularity === maxPop ? 2 : 0.5)
-      .style('cursor', 'pointer')
-      .on('click', function (_event: MouseEvent, d: SavedTrack) {
-        // Play track via SDK or preview
-        playTrack(d.track);
-      })
-      .on('mouseover', function (this: SVGCircleElement, event: MouseEvent, d: SavedTrack) {
-        select(this)
-          .attr('opacity', 1)
-          .attr('stroke', '#fff')
-          .attr('stroke-width', 2)
-          .attr('r', r(d.track.popularity) * 1.4);
-        const tooltip = tooltipRef.current;
-        if (tooltip) {
-          const addedDate = new Date(d.added_at).toLocaleDateString();
-          const popColor = colorScale(d.track.popularity);
-          tooltip.innerHTML = `
-            <strong>${d.track.name}</strong>
-            <span class="tooltip-artist">${d.track.artists.map(a => a.name).join(', ')}</span>
-            <span class="tooltip-album">${d.track.album.name}</span>
-            <span class="tooltip-stat">
-              <span class="tooltip-label">Popularity</span>
-              <span class="tooltip-value" style="color: ${popColor}">${d.track.popularity}</span>
-            </span>
-            <span class="tooltip-stat">
-              <span class="tooltip-label">Added</span>
-              <span class="tooltip-value">${addedDate}</span>
-            </span>
-          `;
-          tooltip.style.opacity = '1';
-          tooltip.style.left = `${event.pageX + 15}px`;
-          tooltip.style.top = `${event.pageY - 10}px`;
-        }
-      })
-      .on('mouseout', function (this: SVGCircleElement, _event: MouseEvent, d: SavedTrack) {
-        select(this)
-          .attr('opacity', 0.75)
-          .attr('stroke', 'rgba(0,0,0,0.2)')
-          .attr('stroke-width', 0.5)
-          .attr('r', r(d.track.popularity));
-        const tooltip = tooltipRef.current;
-        if (tooltip) {
-          tooltip.style.opacity = '0';
-        }
-      });
-
-    // Legend
-    const legendX = maxWidth - margin.right - 170;
-    const legendY = margin.top;
-
-    const legend = svg.append('g')
-      .attr('class', 'legend')
-      .attr('transform', `translate(${legendX}, ${legendY})`);
-
-    // Legend background
-    legend.append('rect')
-      .attr('x', -12)
-      .attr('y', -12)
-      .attr('width', 150)
-      .attr('height', 64)
-      .attr('fill', 'rgba(18, 18, 18, 0.9)')
-      .attr('rx', 8);
-
-    // Gradient bar
-    const gradientBar = legend.append('g').attr('transform', 'translate(0, 0)');
-    gradientBar.append('rect')
-      .attr('width', 12)
-      .attr('height', 40)
-      .attr('fill', 'url(#popularityGradient)')
-      .attr('rx', 2);
-    gradientBar.append('text')
-      .attr('x', 18)
-      .attr('y', 8)
-      .attr('class', 'legend-label')
-      .text('High popularity');
-    gradientBar.append('text')
-      .attr('x', 18)
-      .attr('y', 38)
-      .attr('class', 'legend-label')
-      .text('Low popularity');
-
-  }, [tracks, maxWidth, maxHeight, margin.left, margin.right, margin.top, margin.bottom, chartWidth, chartHeight, playTrack]);
+  const chartHeight = chartConfig?.dimensions.height ?? 400;
 
   return (
     <div className="dashboard">
@@ -265,7 +142,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       {tracks ? (
         <div className="chart-container">
           <div className="chart-wrapper">
-            <svg ref={svgRef} width="100%" height={maxHeight}></svg>
+            <svg ref={svgRef} width="100%" height={chartHeight}></svg>
             <div ref={tooltipRef} className="tooltip"></div>
           </div>
           {chartStats && (
