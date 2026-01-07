@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useChartConfig, useContainerSize, DEFAULT_MARGINS } from './useChartConfig';
+import {
+  useChartConfig,
+  useContainerSize,
+  DEFAULT_MARGINS,
+} from './useChartConfig';
 import type { SavedTrack } from '../types/spotify';
 
 // Mock cssVariables to avoid CSS variable lookup in tests
@@ -27,12 +31,14 @@ class MockResizeObserver {
 vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
 // Helper to create mock tracks
-function createMockTrack(overrides: Partial<{
-  id: string;
-  name: string;
-  popularity: number;
-  added_at: string;
-}>): SavedTrack {
+function createMockTrack(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    popularity: number;
+    added_at: string;
+  }>
+): SavedTrack {
   return {
     added_at: overrides.added_at ?? '2024-01-15T10:00:00Z',
     track: {
@@ -48,13 +54,17 @@ function createMockTrack(overrides: Partial<{
       disc_number: 1,
       is_local: false,
       external_urls: { spotify: 'https://open.spotify.com/track/test' },
-      artists: [{
-        id: 'artist-1',
-        name: 'Test Artist',
-        uri: 'spotify:artist:artist-1',
-        href: 'https://api.spotify.com/v1/artists/artist-1',
-        external_urls: { spotify: 'https://open.spotify.com/artist/artist-1' },
-      }],
+      artists: [
+        {
+          id: 'artist-1',
+          name: 'Test Artist',
+          uri: 'spotify:artist:artist-1',
+          href: 'https://api.spotify.com/v1/artists/artist-1',
+          external_urls: {
+            spotify: 'https://open.spotify.com/artist/artist-1',
+          },
+        },
+      ],
       album: {
         id: 'album-1',
         name: 'Test Album',
@@ -64,14 +74,20 @@ function createMockTrack(overrides: Partial<{
         release_date: '2024-01-01',
         release_date_precision: 'day',
         total_tracks: 10,
-        images: [{ url: 'https://example.com/image.jpg', height: 300, width: 300 }],
-        artists: [{
-          id: 'artist-1',
-          name: 'Test Artist',
-          uri: 'spotify:artist:artist-1',
-          href: 'https://api.spotify.com/v1/artists/artist-1',
-          external_urls: { spotify: 'https://open.spotify.com/artist/artist-1' },
-        }],
+        images: [
+          { url: 'https://example.com/image.jpg', height: 300, width: 300 },
+        ],
+        artists: [
+          {
+            id: 'artist-1',
+            name: 'Test Artist',
+            uri: 'spotify:artist:artist-1',
+            href: 'https://api.spotify.com/v1/artists/artist-1',
+            external_urls: {
+              spotify: 'https://open.spotify.com/artist/artist-1',
+            },
+          },
+        ],
         external_urls: { spotify: 'https://open.spotify.com/album/album-1' },
       },
     },
@@ -151,7 +167,9 @@ describe('useChartConfig', () => {
 
     it('returns config when tracks and containerSize are provided', () => {
       const tracks = [createMockTrack({ popularity: 75 })];
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
 
       expect(result.current).not.toBeNull();
       expect(result.current?.dimensions).toBeDefined();
@@ -167,7 +185,9 @@ describe('useChartConfig', () => {
         createMockTrack({ id: '2', added_at: '2024-02-01T00:00:00Z' }),
       ];
 
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
 
       expect(result.current?.sortedTracks[0].track.id).toBe('1');
       expect(result.current?.sortedTracks[1].track.id).toBe('2');
@@ -181,20 +201,28 @@ describe('useChartConfig', () => {
         createMockTrack({ popularity: 50 }),
       ];
 
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
       expect(result.current?.maxPopularity).toBe(85);
     });
 
     it('calculates dimensions correctly', () => {
       const tracks = [createMockTrack({})];
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
 
       const dims = result.current?.dimensions;
       expect(dims?.width).toBe(1000);
       expect(dims?.height).toBe(400);
       expect(dims?.margins).toEqual(DEFAULT_MARGINS);
-      expect(dims?.innerWidth).toBe(1000 - DEFAULT_MARGINS.left - DEFAULT_MARGINS.right);
-      expect(dims?.innerHeight).toBe(400 - DEFAULT_MARGINS.top - DEFAULT_MARGINS.bottom);
+      expect(dims?.innerWidth).toBe(
+        1000 - DEFAULT_MARGINS.left - DEFAULT_MARGINS.right
+      );
+      expect(dims?.innerHeight).toBe(
+        400 - DEFAULT_MARGINS.top - DEFAULT_MARGINS.bottom
+      );
     });
   });
 
@@ -207,7 +235,9 @@ describe('useChartConfig', () => {
         createMockTrack({ added_at: '2024-06-01T00:00:00Z' }),
       ];
 
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
       const xScale = result.current?.scales.x;
 
       // First track should be near left margin
@@ -221,7 +251,9 @@ describe('useChartConfig', () => {
 
     it('y scale maps popularity to pixel positions (inverted)', () => {
       const tracks = [createMockTrack({ popularity: 80 })];
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
       const yScale = result.current?.scales.y;
 
       // 0 popularity should be at bottom (higher y value)
@@ -234,7 +266,9 @@ describe('useChartConfig', () => {
 
     it('y scale domain rounds up to nearest 10', () => {
       const tracks = [createMockTrack({ popularity: 73 })];
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
       const yScale = result.current?.scales.y;
 
       // Domain should be [0, 80] (rounded up from 73)
@@ -243,7 +277,9 @@ describe('useChartConfig', () => {
 
     it('radius scale maps popularity to size', () => {
       const tracks = [createMockTrack({})];
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
       const radiusScale = result.current?.scales.radius;
 
       // Higher popularity = larger radius
@@ -257,7 +293,9 @@ describe('useChartConfig', () => {
 
     it('color scale interpolates between gradient colors', () => {
       const tracks = [createMockTrack({})];
-      const { result } = renderHook(() => useChartConfig(tracks, containerSize));
+      const { result } = renderHook(() =>
+        useChartConfig(tracks, containerSize)
+      );
       const colorScale = result.current?.scales.color;
 
       const lowColor = colorScale?.(0);
@@ -322,6 +360,5 @@ describe('useChartConfig', () => {
 
       expect(firstConfig).toBe(secondConfig);
     });
-
   });
 });

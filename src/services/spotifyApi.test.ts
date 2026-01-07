@@ -183,7 +183,9 @@ describe('spotifyApi', () => {
           status: 200,
           json: () =>
             Promise.resolve({
-              artists: ids.slice(0, 50).map((id) => ({ id, name: `Name ${id}` })),
+              artists: ids
+                .slice(0, 50)
+                .map((id) => ({ id, name: `Name ${id}` })),
             }),
         })
         .mockResolvedValueOnce({

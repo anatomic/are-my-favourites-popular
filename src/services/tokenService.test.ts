@@ -28,10 +28,18 @@ describe('tokenService', () => {
   // Create mock storage objects
   const createStorageMock = (data: Record<string, string>) => ({
     getItem: vi.fn((key: string) => data[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => { data[key] = value; }),
-    removeItem: vi.fn((key: string) => { delete data[key]; }),
-    clear: vi.fn(() => { Object.keys(data).forEach(k => delete data[k]); }),
-    get length() { return Object.keys(data).length; },
+    setItem: vi.fn((key: string, value: string) => {
+      data[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete data[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(data).forEach((k) => delete data[k]);
+    }),
+    get length() {
+      return Object.keys(data).length;
+    },
     key: vi.fn((i: number) => Object.keys(data)[i] ?? null),
   });
 
@@ -222,7 +230,9 @@ describe('tokenService', () => {
       sessionData['spotify_expires_at'] = String(Date.now() - 1000);
       localData['spotify_refresh_token'] = 'invalid-refresh';
 
-      vi.mocked(refreshAccessToken).mockRejectedValueOnce(new Error('Invalid grant'));
+      vi.mocked(refreshAccessToken).mockRejectedValueOnce(
+        new Error('Invalid grant')
+      );
 
       await expect(getValidAccessToken()).rejects.toMatchObject({
         message: 'Session expired. Please log in again.',

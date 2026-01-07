@@ -6,6 +6,16 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
+  // Global ignores - must be separate object without 'files'
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '*.config.js',
+      '*.config.ts',
+    ],
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
@@ -19,20 +29,62 @@ export default [
         },
       },
       globals: {
+        // Window and document
         window: 'readonly',
         document: 'readonly',
         navigator: 'readonly',
         console: 'readonly',
+        // Timers
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        // Storage
         localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        // Network
         fetch: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
+        Headers: 'readonly',
+        // DOM types
+        HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        SVGElement: 'readonly',
+        SVGSVGElement: 'readonly',
+        SVGGElement: 'readonly',
+        SVGLineElement: 'readonly',
+        SVGCircleElement: 'readonly',
+        Element: 'readonly',
+        Event: 'readonly',
+        MouseEvent: 'readonly',
+        MutationObserver: 'readonly',
+        ResizeObserver: 'readonly',
+        ResizeObserverCallback: 'readonly',
+        ResizeObserverEntry: 'readonly',
+        // Other browser APIs
         Audio: 'readonly',
         crypto: 'readonly',
+        btoa: 'readonly',
+        atob: 'readonly',
+        getComputedStyle: 'readonly',
+        // TypeScript/Fetch types
+        RequestInit: 'readonly',
+        // Encoding
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        // IndexedDB
+        indexedDB: 'readonly',
+        IDBDatabase: 'readonly',
+        IDBValidKey: 'readonly',
+        // Node.js (for config files)
+        process: 'readonly',
+        // React types
+        React: 'readonly',
       },
     },
     plugins: {
@@ -59,10 +111,6 @@ export default [
         version: 'detect',
       },
     },
-  },
-  {
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    ignores: ['dist/**', 'node_modules/**', '*.config.js'],
   },
   prettierConfig,
 ];

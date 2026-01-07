@@ -23,6 +23,7 @@ npm run test:run # Run tests once
 ### Required Validation Steps
 
 1. **Run tests** to ensure functionality is preserved:
+
    ```bash
    npm test -- --run
    ```
@@ -33,6 +34,7 @@ npm run test:run # Run tests once
    ```
 
 The build runs `tsc` (TypeScript compiler) before Vite bundling. TSC errors are critical to catch before pushing - common issues include:
+
 - Missing type properties in mock objects
 - Unused variables (TypeScript strict mode)
 - Invalid global assignments (use `vi.stubGlobal()` in tests instead of `global.X`)
@@ -41,11 +43,13 @@ The build runs `tsc` (TypeScript compiler) before Vite bundling. TSC errors are 
 ### Test Coverage
 
 Run coverage report to check test quality:
+
 ```bash
 npm run test:coverage
 ```
 
 Current coverage targets core business logic modules:
+
 - `src/auth.ts` - PKCE authentication
 - `src/services/tokenService.ts` - Token management
 - `src/services/spotifyApi.ts` - API calls with retry logic

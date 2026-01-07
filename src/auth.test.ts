@@ -124,7 +124,11 @@ describe('auth', () => {
       });
 
       await expect(
-        exchangeCodeForToken('expired-code', 'verifier', 'http://localhost:3000')
+        exchangeCodeForToken(
+          'expired-code',
+          'verifier',
+          'http://localhost:3000'
+        )
       ).rejects.toThrow('Authorization code expired');
     });
 

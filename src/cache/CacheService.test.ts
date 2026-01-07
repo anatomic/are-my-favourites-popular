@@ -169,7 +169,9 @@ describe('CacheService', () => {
       const result = await cacheService.set('store', 'key', { data: 'test' });
 
       expect(result).toBe(true);
-      expect(mockIndexedDBInstance.set).toHaveBeenCalledWith('store', 'key', { data: 'test' });
+      expect(mockIndexedDBInstance.set).toHaveBeenCalledWith('store', 'key', {
+        data: 'test',
+      });
     });
 
     it('tries fallback when primary fails', async () => {
@@ -210,7 +212,9 @@ describe('CacheService', () => {
     });
 
     it('returns false on error', async () => {
-      mockIndexedDBInstance.delete.mockRejectedValue(new Error('Delete failed'));
+      mockIndexedDBInstance.delete.mockRejectedValue(
+        new Error('Delete failed')
+      );
 
       const result = await cacheService.delete('store', 'key');
 
@@ -315,7 +319,9 @@ describe('CacheService', () => {
 
     it('tries fallbacks on error', async () => {
       const fallbackMap = new Map([['key1', { fallback: true }]]);
-      mockIndexedDBInstance.getMany.mockRejectedValue(new Error('GetMany error'));
+      mockIndexedDBInstance.getMany.mockRejectedValue(
+        new Error('GetMany error')
+      );
       mockLocalStorageInstance.getMany.mockResolvedValue(fallbackMap);
 
       const result = await cacheService.getMany('store', ['key1']);

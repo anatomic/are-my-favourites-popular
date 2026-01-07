@@ -158,7 +158,7 @@ export async function getValidAccessToken(): Promise<string> {
     try {
       const tokenData = await refreshTokenWithMutex();
       return tokenData.access_token;
-    } catch (error) {
+    } catch {
       // Refresh failed - clear tokens and throw auth error
       clearTokens();
       const authError = new Error(
