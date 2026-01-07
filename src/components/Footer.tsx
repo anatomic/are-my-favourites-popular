@@ -1,4 +1,7 @@
 import type { ReactElement } from 'react';
+import { ShareButton } from './sharing';
+import type { SharePlatform } from '../types/sharing';
+import { getStaticShareContent } from '../utils/sharing';
 import './footer.css';
 
 interface FooterProps {
@@ -43,6 +46,18 @@ function Footer({ onLogout }: FooterProps): ReactElement {
         >
           GitHub
         </a>
+      </div>
+      <div className="footer-share">
+        <span className="footer-share__label">Share:</span>
+        {(['twitter', 'facebook', 'linkedin', 'copy'] as SharePlatform[]).map((platform) => (
+          <ShareButton
+            key={platform}
+            platform={platform}
+            content={getStaticShareContent()}
+            variant="icon-only"
+            size="sm"
+          />
+        ))}
       </div>
       <a
         href="https://www.spotify.com"

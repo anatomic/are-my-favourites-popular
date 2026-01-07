@@ -16,6 +16,7 @@ import {
 } from './chart';
 import type { DashboardProps, SavedTrack, SpotifyTrack } from '../types/spotify';
 import Footer from './Footer';
+import { ShareButtonGroup } from './sharing';
 import './dashboard.css';
 import './graph.css';
 
@@ -186,6 +187,18 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
           Popularity scores reflect current streaming activity, not when you added each track
         </p>
         <p className="helper-text">Click any track to play it in the player below</p>
+        {chartStats && (
+          <div className="dashboard-share">
+            <ShareButtonGroup
+              stats={{
+                totalTracks: chartStats.total,
+                avgPopularity: chartStats.avgPopularity,
+              }}
+              variant="secondary"
+              showToggle={true}
+            />
+          </div>
+        )}
       </header>
 
       {tracks ? (
