@@ -246,7 +246,7 @@ export function useChartConfig(
       sortedTracks,
       maxPopularity,
     };
-  }, [tracks, containerSize?.width, containerSize?.height]);
+  }, [tracks, containerSize]);
 }
 
 export { DEFAULT_MARGINS };

@@ -56,104 +56,104 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
 
   // Handle OAuth callback and session restoration
   useEffect(() => {
-    handleAuth();
-  }, []);
-
-  async function handleAuth(): Promise<void> {
-    try {
-      // Check for authorization code in URL (PKCE callback)
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const authError = params.get('error');
-
-      if (authError) {
-        setState((prev) => ({
-          ...prev,
-          error: `Authorization failed: ${authError}`,
-          isLoading: false,
-        }));
-        return;
+    async function fetchAndCacheUserId(): Promise<string> {
+      // Check cache first
+      const cachedId = getCachedUserId();
+      if (cachedId) {
+        return cachedId;
       }
 
-      if (code) {
-        // Exchange authorization code for tokens
-        const codeVerifier = sessionStorage.getItem('code_verifier');
-        if (!codeVerifier) {
+      // Fetch from API
+      const profile = await fetchUserProfile();
+      cacheUserId(profile.id);
+      return profile.id;
+    }
+
+    async function handleAuth(): Promise<void> {
+      try {
+        // Check for authorization code in URL (PKCE callback)
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const authError = params.get('error');
+
+        if (authError) {
           setState((prev) => ({
             ...prev,
-            error: 'Missing code verifier. Please try logging in again.',
+            error: `Authorization failed: ${authError}`,
             isLoading: false,
           }));
           return;
         }
 
-        // Clear URL immediately to prevent double-execution in React StrictMode
-        const redirectUri = window.location.origin + window.location.pathname;
-        window.history.replaceState(null, '', window.location.pathname);
-        sessionStorage.removeItem('code_verifier');
+        if (code) {
+          // Exchange authorization code for tokens
+          const codeVerifier = sessionStorage.getItem('code_verifier');
+          if (!codeVerifier) {
+            setState((prev) => ({
+              ...prev,
+              error: 'Missing code verifier. Please try logging in again.',
+              isLoading: false,
+            }));
+            return;
+          }
 
-        const tokenData = await exchangeCodeForToken(
-          code,
-          codeVerifier,
-          redirectUri
-        );
-        saveTokens(tokenData);
+          // Clear URL immediately to prevent double-execution in React StrictMode
+          const redirectUri = window.location.origin + window.location.pathname;
+          window.history.replaceState(null, '', window.location.pathname);
+          sessionStorage.removeItem('code_verifier');
 
-        // Fetch and cache user ID
-        const userId = await fetchAndCacheUserId();
+          const tokenData = await exchangeCodeForToken(
+            code,
+            codeVerifier,
+            redirectUri
+          );
+          saveTokens(tokenData);
 
-        setState({
-          isAuthenticated: true,
+          // Fetch and cache user ID
+          const userId = await fetchAndCacheUserId();
+
+          setState({
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            userId,
+          });
+          return;
+        }
+
+        // Try to restore session from stored tokens
+        const authRestored = await initializeAuth();
+        if (authRestored) {
+          const userId = await fetchAndCacheUserId();
+          setState({
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            userId,
+          });
+          return;
+        }
+
+        // No valid auth
+        setState((prev) => ({
+          ...prev,
           isLoading: false,
-          error: null,
-          userId,
-        });
-        return;
-      }
-
-      // Try to restore session from stored tokens
-      const authRestored = await initializeAuth();
-      if (authRestored) {
-        const userId = await fetchAndCacheUserId();
+        }));
+      } catch (err) {
+        loggers.auth.error('Auth error:', err);
+        const error = err as Error;
+        clearTokens();
         setState({
-          isAuthenticated: true,
+          isAuthenticated: false,
           isLoading: false,
-          error: null,
-          userId,
+          error: error.message,
+          userId: null,
         });
-        return;
       }
-
-      // No valid auth
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-      }));
-    } catch (err) {
-      loggers.auth.error('Auth error:', err);
-      const error = err as Error;
-      clearTokens();
-      setState({
-        isAuthenticated: false,
-        isLoading: false,
-        error: error.message,
-        userId: null,
-      });
-    }
-  }
-
-  async function fetchAndCacheUserId(): Promise<string> {
-    // Check cache first
-    const cachedId = getCachedUserId();
-    if (cachedId) {
-      return cachedId;
     }
 
-    // Fetch from API
-    const profile = await fetchUserProfile();
-    cacheUserId(profile.id);
-    return profile.id;
-  }
+    handleAuth();
+  }, []);
 
   const login = useCallback(() => {
     // Login is handled by the Login component redirecting to Spotify

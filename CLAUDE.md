@@ -18,27 +18,42 @@ npm run test:run # Run tests once
 
 ## Validating Changes
 
-**IMPORTANT**: Always validate changes before pushing code. Run both the test suite and build to catch errors early.
+**IMPORTANT**: Always validate changes before pushing code.
 
 ### Required Validation Steps
 
-1. **Run tests** to ensure functionality is preserved:
+1. **Run linter** to catch code quality issues:
+
+   ```bash
+   npm run lint
+   ```
+
+2. **Run formatter** to ensure consistent code style:
+
+   ```bash
+   npm run format        # Fix formatting issues
+   npm run format:check  # Check only (no changes)
+   ```
+
+3. **Run tests** to ensure functionality is preserved:
 
    ```bash
    npm test -- --run
    ```
 
-2. **Run the build** to catch TypeScript errors:
+4. **Run the build** to catch all errors (includes lint + format + TypeScript):
+
    ```bash
    npm run build
    ```
 
-The build runs `tsc` (TypeScript compiler) before Vite bundling. TSC errors are critical to catch before pushing - common issues include:
+The build runs `lint`, `format:check`, and `tsc` (TypeScript compiler) before Vite bundling. Common issues to watch for:
 
 - Missing type properties in mock objects
 - Unused variables (TypeScript strict mode)
 - Invalid global assignments (use `vi.stubGlobal()` in tests instead of `global.X`)
 - Missing imports
+- React hooks missing dependencies
 
 ### Test Coverage
 
