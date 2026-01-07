@@ -1,44 +1,60 @@
+import type { ReactElement } from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { PlayerProps } from '../types/spotify';
 import './player.css';
 
 // Icons
-const PlayIcon = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-    <path d="M8 5v14l11-7z" />
-  </svg>
-);
+function PlayIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
 
-const PauseIcon = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-  </svg>
-);
+function PauseIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+    </svg>
+  );
+}
 
-const PrevIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-  </svg>
-);
+function PrevIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+    </svg>
+  );
+}
 
-const NextIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-  </svg>
-);
+function NextIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+    </svg>
+  );
+}
 
-const VolumeIcon = ({ level }) => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-    {level === 0 ? (
-      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-    ) : level < 0.5 ? (
-      <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z" />
-    ) : (
-      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-    )}
-  </svg>
-);
+interface VolumeIconProps {
+  level: number;
+}
 
-function formatTime(ms) {
+function VolumeIcon({ level }: VolumeIconProps): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      {level === 0 ? (
+        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+      ) : level < 0.5 ? (
+        <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z" />
+      ) : (
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+      )}
+    </svg>
+  );
+}
+
+function formatTime(ms: number): string {
   if (!ms || ms < 0) return '0:00';
   const seconds = Math.floor(ms / 1000);
   const mins = Math.floor(seconds / 60);
@@ -60,15 +76,15 @@ function Player({
   onPrevious,
   onNext,
   onVolumeChange,
-}) {
-  const [volume, setVolume] = useState(0.5);
-  const [localPosition, setLocalPosition] = useState(position);
-  const [isDraggingProgress, setIsDraggingProgress] = useState(false);
-  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
-  const [hasInitializedVolume, setHasInitializedVolume] = useState(false);
-  const progressRef = useRef(null);
-  const volumeRef = useRef(null);
-  const animationRef = useRef(null);
+}: PlayerProps): ReactElement {
+  const [volume, setVolume] = useState<number>(0.5);
+  const [localPosition, setLocalPosition] = useState<number>(position);
+  const [isDraggingProgress, setIsDraggingProgress] = useState<boolean>(false);
+  const [isDraggingVolume, setIsDraggingVolume] = useState<boolean>(false);
+  const [hasInitializedVolume, setHasInitializedVolume] = useState<boolean>(false);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const volumeRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number | null>(null);
 
   // Alias for animation logic
   const isDragging = isDraggingProgress;
@@ -94,7 +110,7 @@ function Player({
       const startTime = Date.now();
       const startPosition = position;
 
-      const animate = () => {
+      const animate = (): void => {
         const elapsed = Date.now() - startTime;
         setLocalPosition(Math.min(startPosition + elapsed, duration));
         animationRef.current = requestAnimationFrame(animate);
@@ -110,7 +126,7 @@ function Player({
   }, [isPlaying, position, duration, isDragging]);
 
   // Progress bar drag handlers
-  const handleProgressMouseDown = useCallback((e) => {
+  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
     if (!progressRef.current || !duration) return;
     e.preventDefault();
     setIsDraggingProgress(true);
@@ -124,7 +140,7 @@ function Player({
   useEffect(() => {
     if (!isDraggingProgress) return;
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent): void => {
       if (!progressRef.current || !duration) return;
       const rect = progressRef.current.getBoundingClientRect();
       const percent = (e.clientX - rect.left) / rect.width;
@@ -132,7 +148,7 @@ function Player({
       setLocalPosition(newPosition);
     };
 
-    const handleMouseUp = (e) => {
+    const handleMouseUp = (e: MouseEvent): void => {
       if (progressRef.current && duration) {
         const rect = progressRef.current.getBoundingClientRect();
         const percent = (e.clientX - rect.left) / rect.width;
@@ -151,7 +167,7 @@ function Player({
   }, [isDraggingProgress, duration, onSeek]);
 
   // Volume bar drag handlers
-  const handleVolumeMouseDown = useCallback((e) => {
+  const handleVolumeMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
     if (!volumeRef.current) return;
     e.preventDefault();
     setIsDraggingVolume(true);
@@ -164,14 +180,14 @@ function Player({
   useEffect(() => {
     if (!isDraggingVolume) return;
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent): void => {
       if (!volumeRef.current) return;
       const rect = volumeRef.current.getBoundingClientRect();
       const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
       setVolume(newVolume);
     };
 
-    const handleMouseUp = (e) => {
+    const handleMouseUp = (e: MouseEvent): void => {
       if (volumeRef.current) {
         const rect = volumeRef.current.getBoundingClientRect();
         const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));

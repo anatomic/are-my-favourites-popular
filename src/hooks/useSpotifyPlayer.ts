@@ -1,11 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type {
+  SpotifyTrack,
+  SpotifyDevice,
+  SpotifyPlaybackState,
+  WebPlaybackState,
+  WebPlaybackPlayer,
+  UseSpotifyPlayerReturn,
+  SpotifyDevicesResponse,
+} from '../types/spotify';
 
 const POLL_INTERVAL = 1000; // Poll external playback state every second
 const PLAYER_NAME = 'Are My Favourites Popular?';
 
 // Singleton guard to prevent React StrictMode from creating multiple players
-let playerInstance = null;
-let playerDeviceId = null;
+let playerInstance: WebPlaybackPlayer | null = null;
+let playerDeviceId: string | null = null;
 
 /**
  * Custom hook to manage Spotify Web Playback SDK + external device monitoring
@@ -15,26 +24,26 @@ let playerDeviceId = null;
  * `ready` event does NOT match the ID in the /v1/me/player/devices API.
  * We resolve the correct device ID by querying the API and matching by device name.
  *
- * @param {Function} getAccessToken - Async function that returns a valid access token
- * @returns {Object} Player state and control methods
+ * @param getAccessToken - Async function that returns a valid access token
+ * @returns Player state and control methods
  */
-export function useSpotifyPlayer(getAccessToken) {
-  const [isReady, setIsReady] = useState(false);
-  const [isPremium, setIsPremium] = useState(null); // null = unknown, true/false = determined
-  const [deviceId, setDeviceId] = useState(null);
-  const [localPlayerState, setLocalPlayerState] = useState(null);
-  const [externalPlayerState, setExternalPlayerState] = useState(null);
-  const [activeDeviceId, setActiveDeviceId] = useState(null);
-  const [error, setError] = useState(null);
+export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpotifyPlayerReturn {
+  const [isReady, setIsReady] = useState<boolean>(false);
+  const [isPremium, setIsPremium] = useState<boolean | null>(null); // null = unknown, true/false = determined
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [localPlayerState, setLocalPlayerState] = useState<WebPlaybackState | null>(null);
+  const [externalPlayerState, setExternalPlayerState] = useState<SpotifyPlaybackState | null>(null);
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const playerRef = useRef(null);
-  const tokenRef = useRef(null);
-  const pollIntervalRef = useRef(null);
-  const activatedRef = useRef(false);
-  const mountedRef = useRef(true);
+  const playerRef = useRef<WebPlaybackPlayer | null>(null);
+  const tokenRef = useRef<string | null>(null);
+  const pollIntervalRef = useRef<number | null>(null);
+  const activatedRef = useRef<boolean>(false);
+  const mountedRef = useRef<boolean>(true);
 
   // Helper to make API requests with fresh token
-  const makeApiRequest = useCallback(async (url, options = {}) => {
+  const makeApiRequest = useCallback(async (url: string, options: RequestInit = {}): Promise<Response> => {
     try {
       const token = await getAccessToken();
       tokenRef.current = token;
@@ -55,7 +64,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [getAccessToken]);
 
   // Fetch current playback state from any device
-  const fetchExternalPlaybackState = useCallback(async () => {
+  const fetchExternalPlaybackState = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
 
     try {
@@ -69,7 +78,7 @@ export function useSpotifyPlayer(getAccessToken) {
       }
 
       if (response.ok) {
-        const data = await response.json();
+        const data: SpotifyPlaybackState = await response.json();
         setExternalPlayerState(data);
         setActiveDeviceId(data.device?.id || null);
 
@@ -89,7 +98,7 @@ export function useSpotifyPlayer(getAccessToken) {
 
     mountedRef.current = true;
 
-    const initializePlayer = async () => {
+    const initializePlayer = async (): Promise<void> => {
       // Check if SDK is loaded
       if (!window.Spotify) {
         // Check if SDK callback already fired (race condition)
@@ -192,19 +201,19 @@ export function useSpotifyPlayer(getAccessToken) {
 
           // Due to known Spotify bug, SDK device_id may not match API device_id
           // Poll the API to find our device by name and get the correct ID
-          const resolveDeviceId = async (retries = 5, delay = 500) => {
+          const resolveDeviceId = async (retries = 5, delay = 500): Promise<string | null> => {
             for (let attempt = 0; attempt < retries; attempt++) {
               if (!mountedRef.current) return null;
 
               try {
-                const token = await getAccessToken();
+                const freshToken = await getAccessToken();
                 const resp = await fetch('https://api.spotify.com/v1/me/player/devices', {
-                  headers: { Authorization: `Bearer ${token}` }
+                  headers: { Authorization: `Bearer ${freshToken}` }
                 });
 
                 if (resp.ok) {
-                  const { devices } = await resp.json();
-                  const ourDevice = devices.find(d => d.name === PLAYER_NAME);
+                  const { devices }: SpotifyDevicesResponse = await resp.json();
+                  const ourDevice = devices.find((d: SpotifyDevice) => d.name === PLAYER_NAME);
 
                   if (ourDevice) {
                     if (ourDevice.id !== sdkDeviceId) {
@@ -214,7 +223,8 @@ export function useSpotifyPlayer(getAccessToken) {
                   }
                 }
               } catch (e) {
-                console.warn('Device lookup attempt failed:', e.message);
+                const err = e as Error;
+                console.warn('Device lookup attempt failed:', err.message);
               }
 
               // Wait before retry with exponential backoff
@@ -270,7 +280,8 @@ export function useSpotifyPlayer(getAccessToken) {
         }
       } catch (err) {
         console.error('Error initializing Spotify player:', err);
-        if (mountedRef.current) setError(err.message);
+        const error = err as Error;
+        if (mountedRef.current) setError(error.message);
       }
     };
 
@@ -293,7 +304,7 @@ export function useSpotifyPlayer(getAccessToken) {
     fetchExternalPlaybackState();
 
     // Set up polling
-    pollIntervalRef.current = setInterval(fetchExternalPlaybackState, POLL_INTERVAL);
+    pollIntervalRef.current = window.setInterval(fetchExternalPlaybackState, POLL_INTERVAL);
 
     return () => {
       if (pollIntervalRef.current) {
@@ -303,10 +314,10 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [fetchExternalPlaybackState, isReady]);
 
   // Determine if playback is on our web player
-  const isPlayingLocally = deviceId && activeDeviceId === deviceId;
+  const isPlayingLocally = Boolean(deviceId && activeDeviceId === deviceId);
 
   // Activate the SDK player element (required for browser autoplay policies)
-  const activatePlayer = useCallback(async () => {
+  const activatePlayer = useCallback(async (): Promise<void> => {
     if (activatedRef.current || !playerRef.current) return;
 
     try {
@@ -319,7 +330,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, []);
 
   // Retry play with increasing delays - handles cold start of web player
-  const retryPlay = useCallback(async (trackUri, positionMs, targetDeviceId) => {
+  const retryPlay = useCallback(async (trackUri: string, positionMs: number, targetDeviceId: string): Promise<boolean> => {
     const delays = [1000, 2000, 3000]; // Increasing delays between retries
 
     for (let attempt = 0; attempt < delays.length; attempt++) {
@@ -347,7 +358,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest]);
 
   // Play a specific track (always plays on web player, taking over playback)
-  const play = useCallback(async (trackUri, positionMs = 0) => {
+  const play = useCallback(async (trackUri: string, positionMs = 0): Promise<boolean> => {
     // Clear previous errors on attempt
     setError(null);
 
@@ -366,12 +377,12 @@ export function useSpotifyPlayer(getAccessToken) {
 
       const devicesResponse = await makeApiRequest('https://api.spotify.com/v1/me/player/devices');
       if (devicesResponse.ok) {
-        const { devices } = await devicesResponse.json();
-        const ourDevice = devices.find(d => d.id === deviceId);
+        const { devices }: SpotifyDevicesResponse = await devicesResponse.json();
+        const ourDevice = devices.find((d: SpotifyDevice) => d.id === deviceId);
 
         if (!ourDevice) {
           // Device not found by ID - try to find by name
-          const byName = devices.find(d => d.name === PLAYER_NAME);
+          const byName = devices.find((d: SpotifyDevice) => d.name === PLAYER_NAME);
           if (byName) {
             console.log('Device ID corrected via name lookup');
             targetDeviceId = byName.id;
@@ -459,7 +470,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [deviceId, makeApiRequest, fetchExternalPlaybackState, activatePlayer, retryPlay]);
 
   // Pause playback (works on any device)
-  const pause = useCallback(async () => {
+  const pause = useCallback(async (): Promise<void> => {
     setError(null);
 
     try {
@@ -474,7 +485,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest, fetchExternalPlaybackState]);
 
   // Resume playback (works on any device)
-  const resume = useCallback(async () => {
+  const resume = useCallback(async (): Promise<void> => {
     setError(null);
 
     try {
@@ -489,7 +500,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest, fetchExternalPlaybackState]);
 
   // Toggle play/pause (works on any device)
-  const togglePlay = useCallback(async () => {
+  const togglePlay = useCallback(async (): Promise<void> => {
     const isCurrentlyPlaying = externalPlayerState?.is_playing;
     if (isCurrentlyPlaying) {
       await pause();
@@ -499,7 +510,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [externalPlayerState, pause, resume]);
 
   // Seek to position (works on any device)
-  const seek = useCallback(async (positionMs) => {
+  const seek = useCallback(async (positionMs: number): Promise<void> => {
     setError(null);
 
     try {
@@ -515,7 +526,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest, fetchExternalPlaybackState]);
 
   // Set volume (works on any device)
-  const setVolume = useCallback(async (volume) => {
+  const setVolumeFunc = useCallback(async (volume: number): Promise<void> => {
     try {
       const volumePercent = Math.round(volume * 100);
       await makeApiRequest(
@@ -528,7 +539,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest]);
 
   // Next track (works on any device)
-  const nextTrack = useCallback(async () => {
+  const nextTrack = useCallback(async (): Promise<void> => {
     setError(null);
 
     try {
@@ -543,7 +554,7 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest, fetchExternalPlaybackState]);
 
   // Previous track (works on any device)
-  const previousTrack = useCallback(async () => {
+  const previousTrack = useCallback(async (): Promise<void> => {
     setError(null);
 
     try {
@@ -558,17 +569,17 @@ export function useSpotifyPlayer(getAccessToken) {
   }, [makeApiRequest, fetchExternalPlaybackState]);
 
   // Get current volume
-  const getVolume = useCallback(async () => {
-    return externalPlayerState?.device?.volume_percent / 100 || 0.5;
+  const getVolume = useCallback(async (): Promise<number> => {
+    return (externalPlayerState?.device?.volume_percent ?? 50) / 100;
   }, [externalPlayerState]);
 
   // Derive current state from external state (any device) or local state (web player)
   // External state is authoritative since it works for all devices
-  const currentTrack = externalPlayerState?.item || null;
-  const isPlaying = externalPlayerState?.is_playing || false;
-  const position = externalPlayerState?.progress_ms || 0;
-  const duration = externalPlayerState?.item?.duration_ms || 0;
-  const currentDevice = externalPlayerState?.device || null;
+  const currentTrack: SpotifyTrack | null = externalPlayerState?.item || null;
+  const isPlaying: boolean = externalPlayerState?.is_playing || false;
+  const position: number = externalPlayerState?.progress_ms || 0;
+  const duration: number = externalPlayerState?.item?.duration_ms || 0;
+  const currentDevice: SpotifyDevice | null = externalPlayerState?.device || null;
 
   return {
     // State
@@ -591,7 +602,7 @@ export function useSpotifyPlayer(getAccessToken) {
     resume,
     togglePlay,
     seek,
-    setVolume,
+    setVolume: setVolumeFunc,
     getVolume,
     nextTrack,
     previousTrack,

@@ -5,9 +5,17 @@
  * Limited to ~5-10MB depending on browser
  */
 
-import { CACHE_CONFIG } from '../constants.js';
+import { CACHE_CONFIG } from '../constants';
+
+interface StorageError extends Error {
+  name: string;
+  code?: number;
+}
 
 export class LocalStorageAdapter {
+  private _prefix: string;
+  private _maxSize: number;
+
   constructor() {
     this._prefix = CACHE_CONFIG.LOCALSTORAGE_PREFIX;
     this._maxSize = CACHE_CONFIG.MAX_LOCALSTORAGE_SIZE;
@@ -16,13 +24,13 @@ export class LocalStorageAdapter {
   /**
    * Check if localStorage is available and working
    */
-  isAvailable() {
+  isAvailable(): boolean {
     try {
       const testKey = '__storage_test__';
       window.localStorage.setItem(testKey, testKey);
       window.localStorage.removeItem(testKey);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -30,27 +38,27 @@ export class LocalStorageAdapter {
   /**
    * Initialize the adapter
    */
-  async init() {
+  async init(): Promise<boolean> {
     return this.isAvailable();
   }
 
   /**
    * Build a prefixed key for localStorage
    */
-  _buildKey(storeName, key) {
+  private _buildKey(storeName: string, key: string): string {
     return `${this._prefix}${storeName}_${key}`;
   }
 
   /**
    * Get a value from localStorage
    */
-  async get(storeName, key) {
+  async get<T>(storeName: string, key: string): Promise<T | null> {
     try {
       const fullKey = this._buildKey(storeName, key);
       const item = window.localStorage.getItem(fullKey);
       if (!item) return null;
-      return JSON.parse(item);
-    } catch (e) {
+      return JSON.parse(item) as T;
+    } catch {
       // Corrupted data - remove it
       console.warn('LocalStorageAdapter: Failed to parse cached data, clearing entry');
       await this.delete(storeName, key);
@@ -61,7 +69,7 @@ export class LocalStorageAdapter {
   /**
    * Set a value in localStorage
    */
-  async set(storeName, key, value) {
+  async set<T>(storeName: string, key: string, value: T): Promise<boolean> {
     try {
       const fullKey = this._buildKey(storeName, key);
       const serialized = JSON.stringify(value);
@@ -76,7 +84,8 @@ export class LocalStorageAdapter {
       return true;
     } catch (e) {
       // Likely quota exceeded
-      if (e.name === 'QuotaExceededError' || e.code === 22) {
+      const error = e as StorageError;
+      if (error.name === 'QuotaExceededError' || error.code === 22) {
         console.warn('LocalStorageAdapter: Quota exceeded');
       }
       return false;
@@ -86,12 +95,12 @@ export class LocalStorageAdapter {
   /**
    * Delete a value from localStorage
    */
-  async delete(storeName, key) {
+  async delete(storeName: string, key: string): Promise<boolean> {
     try {
       const fullKey = this._buildKey(storeName, key);
       window.localStorage.removeItem(fullKey);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -99,9 +108,9 @@ export class LocalStorageAdapter {
   /**
    * Clear all data for a store, or all cache data if no storeName provided
    */
-  async clear(storeName = null) {
+  async clear(storeName: string | null = null): Promise<boolean> {
     try {
-      const keysToRemove = [];
+      const keysToRemove: string[] = [];
       const prefix = storeName
         ? `${this._prefix}${storeName}_`
         : this._prefix;
@@ -115,7 +124,7 @@ export class LocalStorageAdapter {
 
       keysToRemove.forEach(key => window.localStorage.removeItem(key));
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -123,8 +132,8 @@ export class LocalStorageAdapter {
   /**
    * Get all keys in a store
    */
-  async keys(storeName) {
-    const result = [];
+  async keys(storeName: string): Promise<string[]> {
+    const result: string[] = [];
     const prefix = `${this._prefix}${storeName}_`;
 
     for (let i = 0; i < window.localStorage.length; i++) {
@@ -141,12 +150,12 @@ export class LocalStorageAdapter {
   /**
    * Get all values in a store
    */
-  async getAll(storeName) {
+  async getAll<T>(storeName: string): Promise<T[]> {
     const keys = await this.keys(storeName);
-    const values = [];
+    const values: T[] = [];
 
     for (const key of keys) {
-      const value = await this.get(storeName, key);
+      const value = await this.get<T>(storeName, key);
       if (value !== null) {
         values.push(value);
       }

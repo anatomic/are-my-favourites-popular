@@ -1,12 +1,14 @@
 // PKCE (Proof Key for Code Exchange) utilities for Spotify OAuth
 
-export function generateCodeVerifier(length = 64) {
+import type { SpotifyTokenResponse } from './types/spotify';
+
+export function generateCodeVerifier(length = 64): string {
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   const randomValues = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(randomValues, (x) => possible[x % possible.length]).join('');
 }
 
-export async function generateCodeChallenge(codeVerifier) {
+export async function generateCodeChallenge(codeVerifier: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(codeVerifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
@@ -14,7 +16,7 @@ export async function generateCodeChallenge(codeVerifier) {
   return base64UrlEncode(digest);
 }
 
-function base64UrlEncode(arrayBuffer) {
+function base64UrlEncode(arrayBuffer: ArrayBuffer): string {
   const bytes = new Uint8Array(arrayBuffer);
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) {
@@ -26,7 +28,11 @@ function base64UrlEncode(arrayBuffer) {
     .replace(/=+$/, '');
 }
 
-export async function exchangeCodeForToken(code, codeVerifier, redirectUri) {
+export async function exchangeCodeForToken(
+  code: string,
+  codeVerifier: string,
+  redirectUri: string
+): Promise<SpotifyTokenResponse> {
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: {
@@ -49,7 +55,7 @@ export async function exchangeCodeForToken(code, codeVerifier, redirectUri) {
   return response.json();
 }
 
-export async function refreshAccessToken(refreshToken) {
+export async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenResponse> {
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: {

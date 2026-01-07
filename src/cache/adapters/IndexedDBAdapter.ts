@@ -4,9 +4,14 @@
  * Async operations, supports 250MB+ storage
  */
 
-import { CACHE_CONFIG } from '../constants.js';
+import { CACHE_CONFIG } from '../constants';
 
 export class IndexedDBAdapter {
+  private _dbName: string;
+  private _dbVersion: number;
+  private _db: IDBDatabase | null;
+  private _stores: string[];
+
   constructor() {
     this._dbName = CACHE_CONFIG.INDEXEDDB_NAME;
     this._dbVersion = CACHE_CONFIG.INDEXEDDB_VERSION;
@@ -17,10 +22,10 @@ export class IndexedDBAdapter {
   /**
    * Check if IndexedDB is available
    */
-  isAvailable() {
+  isAvailable(): boolean {
     try {
       return 'indexedDB' in window && window.indexedDB !== null;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -28,7 +33,7 @@ export class IndexedDBAdapter {
   /**
    * Initialize and open the database
    */
-  async init() {
+  async init(): Promise<boolean> {
     if (!this.isAvailable()) {
       return false;
     }
@@ -46,8 +51,8 @@ export class IndexedDBAdapter {
           resolve(false);
         };
 
-        request.onsuccess = (event) => {
-          this._db = event.target.result;
+        request.onsuccess = () => {
+          this._db = request.result;
 
           // Handle connection closing unexpectedly
           this._db.onclose = () => {
@@ -57,8 +62,8 @@ export class IndexedDBAdapter {
           resolve(true);
         };
 
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
+        request.onupgradeneeded = () => {
+          const db = request.result;
 
           // Create object stores for each cache type
           for (const storeName of this._stores) {
@@ -82,20 +87,20 @@ export class IndexedDBAdapter {
   /**
    * Ensure database is ready before operations
    */
-  async _ensureDb() {
+  private async _ensureDb(): Promise<IDBDatabase> {
     if (!this._db) {
       const initialized = await this.init();
       if (!initialized) {
         throw new Error('IndexedDB not available');
       }
     }
-    return this._db;
+    return this._db!;
   }
 
   /**
    * Get a value from the database
    */
-  async get(storeName, key) {
+  async get<T>(storeName: string, key: string): Promise<T | null> {
     try {
       const db = await this._ensureDb();
 
@@ -105,7 +110,7 @@ export class IndexedDBAdapter {
         const request = store.get(key);
 
         request.onsuccess = () => {
-          resolve(request.result || null);
+          resolve((request.result as T) || null);
         };
 
         request.onerror = () => {
@@ -113,7 +118,7 @@ export class IndexedDBAdapter {
           resolve(null);
         };
       });
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -121,12 +126,12 @@ export class IndexedDBAdapter {
   /**
    * Set a value in the database
    */
-  async set(storeName, key, value) {
+  async set<T>(storeName: string, key: string, value: T): Promise<boolean> {
     try {
       const db = await this._ensureDb();
 
       // Ensure the value has an id field for the keyPath
-      const record = { ...value, id: key };
+      const record = { ...(value as object), id: key };
 
       return new Promise((resolve) => {
         const transaction = db.transaction(storeName, 'readwrite');
@@ -142,7 +147,7 @@ export class IndexedDBAdapter {
           resolve(false);
         };
       });
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -150,7 +155,7 @@ export class IndexedDBAdapter {
   /**
    * Delete a value from the database
    */
-  async delete(storeName, key) {
+  async delete(storeName: string, key: string): Promise<boolean> {
     try {
       const db = await this._ensureDb();
 
@@ -167,7 +172,7 @@ export class IndexedDBAdapter {
           resolve(false);
         };
       });
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -175,13 +180,13 @@ export class IndexedDBAdapter {
   /**
    * Clear all data in a store, or all stores if no storeName provided
    */
-  async clear(storeName = null) {
+  async clear(storeName: string | null = null): Promise<boolean> {
     try {
       const db = await this._ensureDb();
       const storesToClear = storeName ? [storeName] : this._stores;
 
       for (const store of storesToClear) {
-        await new Promise((resolve) => {
+        await new Promise<boolean>((resolve) => {
           const transaction = db.transaction(store, 'readwrite');
           const objectStore = transaction.objectStore(store);
           const request = objectStore.clear();
@@ -192,7 +197,7 @@ export class IndexedDBAdapter {
       }
 
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -200,7 +205,7 @@ export class IndexedDBAdapter {
   /**
    * Get all keys in a store
    */
-  async keys(storeName) {
+  async keys(storeName: string): Promise<IDBValidKey[]> {
     try {
       const db = await this._ensureDb();
 
@@ -217,7 +222,7 @@ export class IndexedDBAdapter {
           resolve([]);
         };
       });
-    } catch (e) {
+    } catch {
       return [];
     }
   }
@@ -225,7 +230,7 @@ export class IndexedDBAdapter {
   /**
    * Get all values in a store
    */
-  async getAll(storeName) {
+  async getAll<T>(storeName: string): Promise<T[]> {
     try {
       const db = await this._ensureDb();
 
@@ -235,14 +240,14 @@ export class IndexedDBAdapter {
         const request = store.getAll();
 
         request.onsuccess = () => {
-          resolve(request.result || []);
+          resolve((request.result as T[]) || []);
         };
 
         request.onerror = () => {
           resolve([]);
         };
       });
-    } catch (e) {
+    } catch {
       return [];
     }
   }
@@ -250,7 +255,7 @@ export class IndexedDBAdapter {
   /**
    * Close the database connection
    */
-  close() {
+  close(): void {
     if (this._db) {
       this._db.close();
       this._db = null;

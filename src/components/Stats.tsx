@@ -1,10 +1,54 @@
+import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import type { StatsProps, SavedTrack, SpotifyArtist } from '../types/spotify';
 import './stats.css';
 
 // Convert string to title case
-function toTitleCase(str) {
+function toTitleCase(str: string): string {
   return str.replace(/\b\w/g, char => char.toUpperCase());
 }
+
+// Internal types for stats calculations
+interface ArtistStats {
+  id: string;
+  name: string;
+  count: number;
+  totalPop: number;
+  years: Set<number>;
+}
+
+interface ArtistStatsWithAvg {
+  id: string;
+  name: string;
+  count: number;
+  avgPopularity: number;
+  years: number[];
+}
+
+interface GenreStats {
+  genre: string;
+  count: number;
+  avgPopularity: number;
+  years: number[];
+}
+
+interface YearData {
+  count: number;
+  totalPop: number;
+}
+
+interface YearlySummaryItem {
+  year: number;
+  count: number;
+  avgPopularity: number;
+  growth: number;
+  countRank: number;
+  popRank: number;
+  lowPopRank: number;
+  growthRank: number;
+}
+
+type SortMode = 'count' | 'popularity';
 
 // Spotify secondary brand colors for highlights
 const HIGHLIGHT_COLORS = {
@@ -14,32 +58,32 @@ const HIGHLIGHT_COLORS = {
   growth: '#F59B23',     // Amber - biggest growth year
 };
 
-function Stats({ tracks, artistMap, onPlayTrack }) {
+function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
 
   // Top 20 most popular songs
-  const top20Popular = useMemo(() => {
+  const top20Popular = useMemo((): SavedTrack[] => {
     return [...tracks]
       .sort((a, b) => b.track.popularity - a.track.popularity)
       .slice(0, 20);
   }, [tracks]);
 
   // Top 20 most niche songs (lowest popularity)
-  const top20Niche = useMemo(() => {
+  const top20Niche = useMemo((): SavedTrack[] => {
     return [...tracks]
       .sort((a, b) => a.track.popularity - b.track.popularity)
       .slice(0, 20);
   }, [tracks]);
 
   // Sort state for artists and genres
-  const [artistSort, setArtistSort] = useState('count'); // 'count' or 'popularity'
-  const [genreSort, setGenreSort] = useState('count'); // 'count' or 'popularity'
+  const [artistSort, setArtistSort] = useState<SortMode>('count');
+  const [genreSort, setGenreSort] = useState<SortMode>('count');
 
   // Top 20 artists by track count (with avg popularity)
-  const topArtists = useMemo(() => {
-    const counts = {};
-    tracks.forEach(t => {
+  const topArtists = useMemo((): ArtistStatsWithAvg[] => {
+    const counts: Record<string, ArtistStats> = {};
+    tracks.forEach((t: SavedTrack) => {
       const year = new Date(t.added_at).getFullYear();
-      t.track.artists.forEach(a => {
+      t.track.artists.forEach((a: SpotifyArtist) => {
         if (!counts[a.id]) {
           counts[a.id] = { id: a.id, name: a.name, count: 0, totalPop: 0, years: new Set() };
         }
@@ -49,8 +93,10 @@ function Stats({ tracks, artistMap, onPlayTrack }) {
       });
     });
     return Object.values(counts)
-      .map(a => ({
-        ...a,
+      .map((a: ArtistStats): ArtistStatsWithAvg => ({
+        id: a.id,
+        name: a.name,
+        count: a.count,
         avgPopularity: Math.round(a.totalPop / a.count),
         years: [...a.years].sort((x, y) => x - y),
       }))
@@ -61,16 +107,16 @@ function Stats({ tracks, artistMap, onPlayTrack }) {
   }, [tracks, artistSort]);
 
   // Genre breakdown (only if artistMap is loaded)
-  const genreStats = useMemo(() => {
+  const genreStats = useMemo((): GenreStats[] => {
     if (!artistMap || artistMap.size === 0) return [];
 
-    const stats = {};
-    tracks.forEach(t => {
+    const stats: Record<string, { count: number; totalPop: number; years: Set<number> }> = {};
+    tracks.forEach((t: SavedTrack) => {
       const year = new Date(t.added_at).getFullYear();
-      t.track.artists.forEach(a => {
+      t.track.artists.forEach((a: SpotifyArtist) => {
         const artist = artistMap.get(a.id);
         if (artist?.genres) {
-          artist.genres.forEach(genre => {
+          artist.genres.forEach((genre: string) => {
             if (!stats[genre]) {
               stats[genre] = { count: 0, totalPop: 0, years: new Set() };
             }
@@ -83,7 +129,7 @@ function Stats({ tracks, artistMap, onPlayTrack }) {
     });
 
     return Object.entries(stats)
-      .map(([genre, data]) => ({
+      .map(([genre, data]): GenreStats => ({
         genre,
         count: data.count,
         avgPopularity: Math.round(data.totalPop / data.count),
@@ -96,9 +142,9 @@ function Stats({ tracks, artistMap, onPlayTrack }) {
   }, [tracks, artistMap, genreSort]);
 
   // Yearly summary - totals and avg popularity by year (ascending)
-  const yearlySummary = useMemo(() => {
-    const byYear = {};
-    tracks.forEach(t => {
+  const yearlySummary = useMemo((): YearlySummaryItem[] => {
+    const byYear: Record<number, YearData> = {};
+    tracks.forEach((t: SavedTrack) => {
       const year = new Date(t.added_at).getFullYear();
       if (!byYear[year]) {
         byYear[year] = { count: 0, totalPop: 0 };
@@ -128,7 +174,7 @@ function Stats({ tracks, artistMap, onPlayTrack }) {
     const sortedByGrowth = [...withGrowth].sort((a, b) => b.growth - a.growth);
 
     // Add ranking info to each year
-    return withGrowth.map(y => ({
+    return withGrowth.map((y): YearlySummaryItem => ({
       ...y,
       countRank: sortedByCount.findIndex(s => s.year === y.year) + 1,
       popRank: sortedByPop.findIndex(s => s.year === y.year) + 1,
