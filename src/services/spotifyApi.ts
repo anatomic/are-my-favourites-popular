@@ -2,33 +2,45 @@
  * Spotify API Service
  *
  * Centralized API client for all Spotify API interactions.
- * Handles authentication headers, error handling, and pagination.
+ * Handles authentication headers, error handling, rate limiting, and pagination.
  */
 
 import { SPOTIFY_API_BASE } from '../config';
 import { getValidAccessToken } from './tokenService';
+import { SPOTIFY, RATE_LIMIT } from '../constants';
+import { SpotifyApiError, RateLimitError } from '../utils/errors';
+import { loggers } from '../utils/logger';
 import type { SavedTrack, SpotifyArtist, SpotifyUserProfile } from '../types/spotify';
 
+const log = loggers.api;
+
+// Re-export error classes for convenience
+export { SpotifyApiError, RateLimitError };
+
 /**
- * Custom error class for API errors with status code
+ * Calculate delay with exponential backoff and jitter
  */
-export class SpotifyApiError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public retryable: boolean = false
-  ) {
-    super(message);
-    this.name = 'SpotifyApiError';
-  }
+function calculateBackoffDelay(attempt: number, baseDelay: number = RATE_LIMIT.MIN_RETRY_DELAY_MS): number {
+  const exponentialDelay = baseDelay * Math.pow(2, attempt);
+  // Use ± jitter to better distribute retry timing and avoid thundering herd
+  const jitter = exponentialDelay * RATE_LIMIT.JITTER_FACTOR * (Math.random() - 0.5);
+  return Math.min(exponentialDelay + jitter, RATE_LIMIT.MAX_RETRY_DELAY_MS);
 }
 
 /**
- * Make an authenticated request to the Spotify API
+ * Sleep for a given number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Make an authenticated request to the Spotify API with rate limit handling
  */
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryCount: number = 0
 ): Promise<T> {
   const accessToken = await getValidAccessToken();
 
@@ -41,8 +53,51 @@ async function apiRequest<T>(
     },
   });
 
+  // Handle rate limiting (429)
+  if (response.status === 429) {
+    // Parse Retry-After header - can be seconds (integer) or HTTP-date
+    const retryAfterHeader = response.headers.get('Retry-After');
+    let retryAfterSeconds: number = RATE_LIMIT.DEFAULT_RETRY_AFTER_S;
+
+    if (retryAfterHeader != null) {
+      const numericValue = Number(retryAfterHeader);
+
+      if (!Number.isNaN(numericValue) && numericValue > 0) {
+        // Header is a number of seconds
+        retryAfterSeconds = numericValue;
+      } else {
+        // Header might be an HTTP-date
+        const retryAfterDateMs = Date.parse(retryAfterHeader);
+        if (!Number.isNaN(retryAfterDateMs)) {
+          const diffMs = retryAfterDateMs - Date.now();
+          if (diffMs > 0) {
+            retryAfterSeconds = Math.ceil(diffMs / 1000);
+          }
+        }
+      }
+    }
+
+    if (retryCount >= RATE_LIMIT.MAX_RETRIES) {
+      throw new RateLimitError(retryAfterSeconds, 'Rate limit exceeded after max retries');
+    }
+
+    log.warn(`Rate limited. Retrying after ${retryAfterSeconds}s (attempt ${retryCount + 1}/${RATE_LIMIT.MAX_RETRIES})`);
+
+    await sleep(retryAfterSeconds * 1000);
+    return apiRequest<T>(endpoint, options, retryCount + 1);
+  }
+
+  // Handle server errors with retry
+  if (response.status >= 500 && retryCount < RATE_LIMIT.MAX_RETRIES) {
+    const delay = calculateBackoffDelay(retryCount);
+    log.warn(`Server error ${response.status}. Retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${RATE_LIMIT.MAX_RETRIES})`);
+
+    await sleep(delay);
+    return apiRequest<T>(endpoint, options, retryCount + 1);
+  }
+
   if (!response.ok) {
-    const isRetryable = response.status === 429 || response.status >= 500;
+    const isRetryable = response.status >= 500;
     throw new SpotifyApiError(
       `API request failed: ${response.status} ${response.statusText}`,
       response.status,
@@ -75,7 +130,7 @@ interface PaginatedResponse {
  */
 export async function fetchAllSavedTracks(): Promise<SavedTrack[]> {
   const tracks: SavedTrack[] = [];
-  let nextEndpoint: string | null = 'v1/me/tracks?offset=0&limit=50';
+  let nextEndpoint: string | null = `v1/me/tracks?offset=0&limit=${SPOTIFY.BATCH_SIZE}`;
 
   while (nextEndpoint) {
     // Handle full URLs from pagination (strip base if present)
@@ -104,8 +159,8 @@ export async function fetchArtists(artistIds: string[]): Promise<SpotifyArtist[]
     return [];
   }
 
-  if (artistIds.length > 50) {
-    throw new Error('Cannot fetch more than 50 artists at once');
+  if (artistIds.length > SPOTIFY.BATCH_SIZE) {
+    throw new Error(`Cannot fetch more than ${SPOTIFY.BATCH_SIZE} artists at once`);
   }
 
   const data = await apiRequest<{ artists: (SpotifyArtist | null)[] }>(
@@ -120,7 +175,7 @@ export async function fetchArtists(artistIds: string[]): Promise<SpotifyArtist[]
  */
 export async function fetchArtistsBatch(
   artistIds: string[],
-  concurrency: number = 3
+  concurrency: number = SPOTIFY.DEFAULT_CONCURRENCY
 ): Promise<SpotifyArtist[]> {
   if (artistIds.length === 0) {
     return [];
@@ -128,8 +183,8 @@ export async function fetchArtistsBatch(
 
   // Split into batches of 50
   const batches: string[][] = [];
-  for (let i = 0; i < artistIds.length; i += 50) {
-    batches.push(artistIds.slice(i, i + 50));
+  for (let i = 0; i < artistIds.length; i += SPOTIFY.BATCH_SIZE) {
+    batches.push(artistIds.slice(i, i + SPOTIFY.BATCH_SIZE));
   }
 
   // Process batches with limited concurrency

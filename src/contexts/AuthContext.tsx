@@ -7,6 +7,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { exchangeCodeForToken } from '../auth';
+import { loggers } from '../utils/logger';
 import {
   saveTokens,
   clearTokens,
@@ -118,7 +119,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
         isLoading: false,
       }));
     } catch (err) {
-      console.error('Auth error:', err);
+      loggers.auth.error('Auth error:', err);
       const error = err as Error;
       clearTokens();
       setState({

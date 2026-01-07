@@ -8,6 +8,9 @@
 import { IndexedDBAdapter } from './adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from './adapters/LocalStorageAdapter';
 import { MemoryAdapter } from './adapters/MemoryAdapter';
+import { loggers } from '../utils/logger';
+
+const log = loggers.cache;
 
 type StorageAdapter = IndexedDBAdapter | LocalStorageAdapter | MemoryAdapter;
 
@@ -86,7 +89,7 @@ export class CacheService {
     try {
       return await this._activeAdapter!.get<T>(storeName, key);
     } catch {
-      console.warn('CacheService: Get failed, trying fallback');
+      log.warn('CacheService: Get failed, trying fallback');
       return this._tryFallbackGet<T>(storeName, key);
     }
   }
@@ -105,7 +108,7 @@ export class CacheService {
       // Primary failed, try fallback
       return this._tryFallbackSet(storeName, key, value);
     } catch {
-      console.warn('CacheService: Set failed, trying fallback');
+      log.warn('CacheService: Set failed, trying fallback');
       return this._tryFallbackSet(storeName, key, value);
     }
   }
@@ -178,7 +181,7 @@ export class CacheService {
     try {
       return await this._activeAdapter!.getMany<T>(storeName, keys);
     } catch {
-      console.warn('CacheService: getMany failed, trying fallback');
+      log.warn('CacheService: getMany failed, trying fallback');
       return this._tryFallbackGetMany<T>(storeName, keys);
     }
   }

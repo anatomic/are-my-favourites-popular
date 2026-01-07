@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { PLAYER, RETRY, SPOTIFY } from '../constants';
+import { loggers } from '../utils/logger';
 import type {
   SpotifyTrack,
   SpotifyDevice,
@@ -9,10 +11,7 @@ import type {
   SpotifyDevicesResponse,
 } from '../types/spotify';
 
-// Smart polling intervals - poll more frequently when playing
-const POLL_INTERVAL_PLAYING = 1000;  // 1 second when music is playing
-const POLL_INTERVAL_PAUSED = 10000;  // 10 seconds when paused/idle
-const PLAYER_NAME = 'Are My Favourites Popular?';
+const log = loggers.player;
 
 // Singleton guard to prevent React StrictMode from creating multiple players
 let playerInstance: WebPlaybackPlayer | null = null;
@@ -60,7 +59,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
       return response;
     } catch (err) {
-      console.error('API request failed:', err);
+      log.error('API request failed:', err);
       throw err;
     }
   }, [getAccessToken]);
@@ -90,7 +89,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         }
       }
     } catch (err) {
-      console.error('Error fetching playback state:', err);
+      log.error('Error fetching playback state:', err);
     }
   }, [makeApiRequest, isPremium]);
 
@@ -111,9 +110,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
               clearInterval(checkSpotify);
               if (mountedRef.current) initializePlayer();
             }
-          }, 50);
+          }, PLAYER.SDK_POLL_INTERVAL_MS);
           // Cleanup interval on unmount
-          setTimeout(() => clearInterval(checkSpotify), 10000); // Give up after 10s
+          setTimeout(() => clearInterval(checkSpotify), PLAYER.SDK_TIMEOUT_MS);
           return;
         }
 
@@ -130,7 +129,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         // Check if we already have a player instance (singleton guard)
         // This prevents React StrictMode from creating duplicate players
         if (playerInstance) {
-          console.log('Reusing existing player instance');
+          log.log('Reusing existing player instance');
           playerRef.current = playerInstance;
 
           // If we have a cached device ID, restore state
@@ -147,13 +146,13 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         tokenRef.current = token;
 
         const player = new window.Spotify.Player({
-          name: PLAYER_NAME,
+          name: PLAYER.NAME,
           getOAuthToken: async (cb) => {
             const freshToken = await getAccessToken();
             tokenRef.current = freshToken;
             cb(freshToken);
           },
-          volume: 0.5,
+          volume: SPOTIFY.DEFAULT_VOLUME,
           enableMediaSession: true, // Enable OS media controls
         });
 
@@ -162,17 +161,17 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
         // Error handling
         player.addListener('initialization_error', ({ message }) => {
-          console.error('Spotify Player initialization error:', message);
+          log.error('Spotify Player initialization error:', message);
           if (mountedRef.current) setError(`Initialization error: ${message}`);
         });
 
         player.addListener('authentication_error', ({ message }) => {
-          console.error('Spotify Player authentication error:', message);
+          log.error('Spotify Player authentication error:', message);
           if (mountedRef.current) setError(`Authentication error: ${message}`);
         });
 
         player.addListener('account_error', ({ message }) => {
-          console.error('Spotify Player account error:', message);
+          log.error('Spotify Player account error:', message);
           if (mountedRef.current) {
             setIsPremium(false);
             setError('Spotify Premium is required for playback');
@@ -180,13 +179,13 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         });
 
         player.addListener('playback_error', ({ message }) => {
-          console.error('Spotify Player playback error:', message);
+          log.error('Spotify Player playback error:', message);
           if (mountedRef.current) setError(`Playback error: ${message}`);
         });
 
         // Handle autoplay blocked by browser
         player.addListener('autoplay_failed', () => {
-          console.warn('Autoplay blocked by browser');
+          log.warn('Autoplay blocked by browser');
           if (mountedRef.current) {
             setError('Click play to start - autoplay blocked by browser');
           }
@@ -194,7 +193,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
         // Ready/not ready
         player.addListener('ready', async ({ device_id: sdkDeviceId }) => {
-          console.log('SDK ready event - device_id:', sdkDeviceId);
+          log.log('SDK ready event - device_id:', sdkDeviceId);
 
           if (!mountedRef.current) return;
 
@@ -203,7 +202,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
           // Due to known Spotify bug, SDK device_id may not match API device_id
           // Poll the API to find our device by name and get the correct ID
-          const resolveDeviceId = async (retries = 5, delay = 500): Promise<string | null> => {
+          const resolveDeviceId = async (retries = RETRY.DEFAULT_RETRIES, delay = RETRY.BASE_DELAY_MS): Promise<string | null> => {
             for (let attempt = 0; attempt < retries; attempt++) {
               if (!mountedRef.current) return null;
 
@@ -215,28 +214,28 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
                 if (resp.ok) {
                   const { devices }: SpotifyDevicesResponse = await resp.json();
-                  const ourDevice = devices.find((d: SpotifyDevice) => d.name === PLAYER_NAME);
+                  const ourDevice = devices.find((d: SpotifyDevice) => d.name === PLAYER.NAME);
 
                   if (ourDevice) {
                     if (ourDevice.id !== sdkDeviceId) {
-                      console.log('Device ID resolved via API (SDK mismatch fixed)');
+                      log.log('Device ID resolved via API (SDK mismatch fixed)');
                     }
                     return ourDevice.id;
                   }
                 }
               } catch (e) {
                 const err = e as Error;
-                console.warn('Device lookup attempt failed:', err.message);
+                log.warn('Device lookup attempt failed:', err.message);
               }
 
               // Wait before retry with exponential backoff
               if (attempt < retries - 1) {
-                await new Promise(r => setTimeout(r, delay * Math.pow(1.5, attempt)));
+                await new Promise(r => setTimeout(r, delay * Math.pow(RETRY.BACKOFF_MULTIPLIER, attempt)));
               }
             }
 
             // Fallback to SDK device_id if API lookup fails
-            console.warn('Could not resolve device via API, using SDK device_id');
+            log.warn('Could not resolve device via API, using SDK device_id');
             return sdkDeviceId;
           };
 
@@ -247,12 +246,12 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
             playerDeviceId = correctDeviceId;
             setDeviceId(correctDeviceId);
             setIsReady(true);
-            console.log('Player ready with device ID:', correctDeviceId);
+            log.log('Player ready with device ID:', correctDeviceId);
           }
         });
 
         player.addListener('not_ready', ({ device_id }) => {
-          console.log('Player device offline:', device_id);
+          log.log('Player device offline:', device_id);
           if (mountedRef.current) {
             setIsReady(false);
             setDeviceId(null);
@@ -270,18 +269,18 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         // NOW connect (after all listeners are set up)
         const success = await player.connect();
         if (success) {
-          console.log('Successfully connected to Spotify');
+          log.log('Successfully connected to Spotify');
           playerRef.current = player;
           playerInstance = player; // Store as singleton
 
           // Start polling for external playback state
           fetchExternalPlaybackState();
         } else {
-          console.error('Failed to connect to Spotify');
+          log.error('Failed to connect to Spotify');
           if (mountedRef.current) setError('Failed to connect to Spotify');
         }
       } catch (err) {
-        console.error('Error initializing Spotify player:', err);
+        log.error('Error initializing Spotify player:', err);
         const error = err as Error;
         if (mountedRef.current) setError(error.message);
       }
@@ -346,7 +345,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
       if (!isTabVisibleRef.current) return;
 
       // Use smart interval based on playback state
-      const interval = isCurrentlyPlaying ? POLL_INTERVAL_PLAYING : POLL_INTERVAL_PAUSED;
+      const interval = isCurrentlyPlaying ? PLAYER.POLL_INTERVAL_PLAYING_MS : PLAYER.POLL_INTERVAL_PAUSED_MS;
       pollIntervalRef.current = window.setInterval(fetchExternalPlaybackState, interval);
     };
 
@@ -372,19 +371,20 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
     try {
       await playerRef.current.activateElement();
       activatedRef.current = true;
-      console.log('Player element activated');
+      log.log('Player element activated');
     } catch (err) {
-      console.log('Could not activate player element:', err);
+      log.log('Could not activate player element:', err);
     }
   }, []);
 
   // Retry play with increasing delays - handles cold start of web player
+  // Note: This function is called AFTER an initial play attempt has already failed.
+  // Each iteration waits first, then retries. The delays [1000, 2000, 3000]ms give
+  // the web player time to become active after a cold start or transfer.
   const retryPlay = useCallback(async (trackUri: string, positionMs: number, targetDeviceId: string): Promise<boolean> => {
-    const delays = [1000, 2000, 3000]; // Increasing delays between retries
-
-    for (let attempt = 0; attempt < delays.length; attempt++) {
-      // Wait before retry
-      await new Promise(r => setTimeout(r, delays[attempt]));
+    for (let attempt = 0; attempt < RETRY.PLAY_RETRY_DELAYS_MS.length; attempt++) {
+      // Wait before each retry attempt to allow player to become ready
+      await new Promise(r => setTimeout(r, RETRY.PLAY_RETRY_DELAYS_MS[attempt]));
 
       const response = await makeApiRequest(
         `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
@@ -412,7 +412,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
     setError(null);
 
     if (!deviceId) {
-      console.error('Player not ready, deviceId:', deviceId);
+      log.error('Player not ready, deviceId:', deviceId);
       setError('Player not ready');
       return false;
     }
@@ -431,9 +431,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
         if (!ourDevice) {
           // Device not found by ID - try to find by name
-          const byName = devices.find((d: SpotifyDevice) => d.name === PLAYER_NAME);
+          const byName = devices.find((d: SpotifyDevice) => d.name === PLAYER.NAME);
           if (byName) {
-            console.log('Device ID corrected via name lookup');
+            log.log('Device ID corrected via name lookup');
             targetDeviceId = byName.id;
             setDeviceId(byName.id);
             playerDeviceId = byName.id;
@@ -447,7 +447,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
                 return false;
               }
               // Wait for ready event to resolve new device ID
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise(resolve => setTimeout(resolve, RETRY.RECONNECT_DELAY_MS));
               // Use the newly resolved device ID
               targetDeviceId = playerDeviceId || deviceId;
             }
@@ -470,13 +470,13 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
       if (response.ok || response.status === 204) {
         setError(null);
-        setTimeout(fetchExternalPlaybackState, 300);
+        setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
         return true;
       }
 
       // If 404 or 403, device may not be active - transfer playback and retry
       if (response.status === 404 || response.status === 403) {
-        console.log(`Got ${response.status}, transferring playback to our device...`);
+        log.log(`Got ${response.status}, transferring playback to our device...`);
 
         // Transfer playback to our device
         const transferResponse = await makeApiRequest(
@@ -493,14 +493,14 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
         if (transferResponse.ok || transferResponse.status === 204) {
           // Wait for transfer to complete
-          await new Promise(r => setTimeout(r, 500));
+          await new Promise(r => setTimeout(r, RETRY.TRANSFER_DELAY_MS));
 
           // Retry the play request
           const success = await retryPlay(trackUri, positionMs, targetDeviceId);
 
           if (success) {
             setError(null);
-            setTimeout(fetchExternalPlaybackState, 300);
+            setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
             return true;
           }
         }
@@ -508,11 +508,11 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
       // If we get here, playback failed
       const errorData = await response.json().catch(() => ({}));
-      console.error('Playback failed:', errorData);
+      log.error('Playback failed:', errorData);
       setError('Failed to start playback');
       return false;
     } catch (err) {
-      console.error('Error playing track:', err);
+      log.error('Error playing track:', err);
       setError('Error starting playback');
       return false;
     }
@@ -526,9 +526,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
       await makeApiRequest('https://api.spotify.com/v1/me/player/pause', {
         method: 'PUT',
       });
-      setTimeout(fetchExternalPlaybackState, 300);
+      setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
     } catch (err) {
-      console.error('Error pausing:', err);
+      log.error('Error pausing:', err);
       setError('Failed to pause');
     }
   }, [makeApiRequest, fetchExternalPlaybackState]);
@@ -541,9 +541,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
       await makeApiRequest('https://api.spotify.com/v1/me/player/play', {
         method: 'PUT',
       });
-      setTimeout(fetchExternalPlaybackState, 300);
+      setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
     } catch (err) {
-      console.error('Error resuming:', err);
+      log.error('Error resuming:', err);
       setError('Failed to resume');
     }
   }, [makeApiRequest, fetchExternalPlaybackState]);
@@ -567,9 +567,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         `https://api.spotify.com/v1/me/player/seek?position_ms=${Math.round(positionMs)}`,
         { method: 'PUT' }
       );
-      setTimeout(fetchExternalPlaybackState, 300);
+      setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
     } catch (err) {
-      console.error('Error seeking:', err);
+      log.error('Error seeking:', err);
       setError('Failed to seek');
     }
   }, [makeApiRequest, fetchExternalPlaybackState]);
@@ -583,7 +583,7 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
         { method: 'PUT' }
       );
     } catch (err) {
-      console.error('Error setting volume:', err);
+      log.error('Error setting volume:', err);
     }
   }, [makeApiRequest]);
 
@@ -595,9 +595,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
       await makeApiRequest('https://api.spotify.com/v1/me/player/next', {
         method: 'POST',
       });
-      setTimeout(fetchExternalPlaybackState, 300);
+      setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
     } catch (err) {
-      console.error('Error skipping to next:', err);
+      log.error('Error skipping to next:', err);
       setError('Failed to skip');
     }
   }, [makeApiRequest, fetchExternalPlaybackState]);
@@ -610,9 +610,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
       await makeApiRequest('https://api.spotify.com/v1/me/player/previous', {
         method: 'POST',
       });
-      setTimeout(fetchExternalPlaybackState, 300);
+      setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
     } catch (err) {
-      console.error('Error skipping to previous:', err);
+      log.error('Error skipping to previous:', err);
       setError('Failed to skip');
     }
   }, [makeApiRequest, fetchExternalPlaybackState]);

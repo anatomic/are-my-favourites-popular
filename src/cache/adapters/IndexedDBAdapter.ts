@@ -5,6 +5,9 @@
  */
 
 import { CACHE_CONFIG } from '../constants';
+import { loggers } from '../../utils/logger';
+
+const log = loggers.cache;
 
 export class IndexedDBAdapter {
   private _dbName: string;
@@ -47,7 +50,7 @@ export class IndexedDBAdapter {
         const request = window.indexedDB.open(this._dbName, this._dbVersion);
 
         request.onerror = () => {
-          console.warn('IndexedDBAdapter: Failed to open database');
+          log.warn('IndexedDBAdapter: Failed to open database');
           resolve(false);
         };
 
@@ -74,11 +77,11 @@ export class IndexedDBAdapter {
         };
 
         request.onblocked = () => {
-          console.warn('IndexedDBAdapter: Database blocked');
+          log.warn('IndexedDBAdapter: Database blocked');
           resolve(false);
         };
       } catch (e) {
-        console.warn('IndexedDBAdapter: Exception during init', e);
+        log.warn('IndexedDBAdapter: Exception during init', e);
         resolve(false);
       }
     });
@@ -114,7 +117,7 @@ export class IndexedDBAdapter {
         };
 
         request.onerror = () => {
-          console.warn('IndexedDBAdapter: Failed to get item');
+          log.warn('IndexedDBAdapter: Failed to get item');
           resolve(null);
         };
       });
@@ -143,7 +146,7 @@ export class IndexedDBAdapter {
         };
 
         request.onerror = () => {
-          console.warn('IndexedDBAdapter: Failed to set item');
+          log.warn('IndexedDBAdapter: Failed to set item');
           resolve(false);
         };
       });
@@ -291,12 +294,12 @@ export class IndexedDBAdapter {
         };
 
         transaction.onerror = () => {
-          console.warn('IndexedDBAdapter: getMany transaction failed');
+          log.warn('IndexedDBAdapter: getMany transaction failed');
           resolve(results);
         };
 
         transaction.onabort = () => {
-          console.warn('IndexedDBAdapter: getMany transaction aborted');
+          log.warn('IndexedDBAdapter: getMany transaction aborted');
           resolve(results);
         };
       });

@@ -8,7 +8,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSpotifyCache } from '../cache';
 import { fetchAllSavedTracks, fetchArtistsBatch } from '../services/spotifyApi';
+import { loggers } from '../utils/logger';
 import type { SavedTrack, ArtistMap } from '../types/spotify';
+
+const log = loggers.app;
 
 interface SpotifyDataState {
   tracks: SavedTrack[] | null;
@@ -79,7 +82,7 @@ export function useSpotifyData(
         error: null,
       });
     } catch (err) {
-      console.error('Failed to load Spotify data:', err);
+      log.error('Failed to load Spotify data:', err);
 
       // Check for 401 status on any error type (SpotifyApiError or plain Error from tokenService)
       const errorStatus = (err as { status?: number }).status;
@@ -156,7 +159,7 @@ export async function clearUserCache(userId: string): Promise<void> {
   try {
     await spotifyCache.invalidateUserCache(userId);
   } catch (err) {
-    console.warn('Failed to invalidate user cache:', err);
+    log.warn('Failed to invalidate user cache:', err);
   }
 }
 
@@ -167,6 +170,6 @@ export async function clearAllCaches(): Promise<void> {
   try {
     await spotifyCache.clearAllCaches();
   } catch (err) {
-    console.warn('Failed to clear caches:', err);
+    log.warn('Failed to clear caches:', err);
   }
 }
