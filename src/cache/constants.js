@@ -9,7 +9,7 @@ export const CACHE_CONFIG = {
   ARTIST_CACHE_TTL: 24 * 60 * 60 * 1000, // 24 hours - artist metadata rarely changes
 
   // Storage configuration
-  MAX_LOCALSTORAGE_SIZE: 4 * 1024 * 1024, // 4MB threshold before falling back
+  MAX_LOCALSTORAGE_SIZE: 2 * 1024 * 1024, // 2MB conservative threshold before falling back
   INDEXEDDB_NAME: 'spotify-favorites-cache',
   INDEXEDDB_VERSION: 1,
 

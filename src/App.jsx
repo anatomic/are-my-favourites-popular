@@ -147,7 +147,9 @@ function App() {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch user profile');
+      const error = new Error(`Failed to fetch user profile: ${response.status}`);
+      error.status = response.status;
+      throw error;
     }
 
     const userData = await response.json();
@@ -282,7 +284,18 @@ function App() {
     // Clear user's track cache (keep artist cache - shared across users)
     const userId = localStorage.getItem('spotify_user_id');
     if (userId) {
-      await spotifyCache.invalidateUserCache(userId);
+      try {
+        await spotifyCache.invalidateUserCache(userId);
+      } catch (err) {
+        console.warn('Failed to invalidate user cache during logout:', err);
+      }
+    } else {
+      // No userId found - clear all track caches to be safe
+      try {
+        await spotifyCache.clearAllCaches();
+      } catch (err) {
+        console.warn('Failed to clear caches during logout:', err);
+      }
     }
 
     clearTokens();
