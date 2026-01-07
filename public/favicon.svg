@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#121212"/>
+
+  <!-- Scatter plot bubbles representing track popularity -->
+  <circle cx="8" cy="22" r="3" fill="#1DB954" opacity="0.6"/>
+  <circle cx="14" cy="16" r="4" fill="#1DB954" opacity="0.8"/>
+  <circle cx="22" cy="10" r="5" fill="#1DB954"/>
+
+  <!-- Trend line -->
+  <path d="M6 24 L14 16 L24 8" stroke="#1ED760" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</svg>

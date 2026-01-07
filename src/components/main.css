@@ -221,3 +221,6 @@ a:hover {
 .text-green {
   color: var(--spotify-green);
 }
+.text-highlight {
+  color: #a855f7;
+}

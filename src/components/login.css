@@ -45,29 +45,6 @@
   color: var(--text-muted);
 }
 
-.login-footer {
-  position: absolute;
-  bottom: var(--space-lg);
-  left: 0;
-  right: 0;
-  text-align: center;
-}
-
-.login-footer p {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-}
-
-.login-footer a {
-  color: var(--text-secondary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.login-footer a:hover {
-  color: var(--spotify-green);
-}
-
 /* Responsive */
 @media (max-width: 480px) {
   .login-title {

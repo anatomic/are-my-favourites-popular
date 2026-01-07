@@ -362,7 +362,7 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                   if (y.growthRank === 1 && y.growth > 0)
                     highlights.push({
                       color: cssColors.highlightGrowth,
-                      title: `Biggest growth (+${y.growth})`,
+                      title: `Largest YoY increase (+${y.growth})`,
                     });
                   if (y.popRank === 1)
                     highlights.push({
@@ -436,7 +436,7 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                 className="indicator-sample"
                 style={{ backgroundColor: cssColors.highlightGrowth }}
               />
-              Biggest growth
+              Largest YoY increase
             </span>
             <span className="legend-item">
               <span
