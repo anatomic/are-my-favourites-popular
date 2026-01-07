@@ -18,6 +18,36 @@
 /* Chart Wrapper - container styles are in graph.css */
 .chart-wrapper {
   position: relative;
+  width: 100%;
+}
+
+/* Chart Legend */
+.chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+}
+
+.chart-legend-gradient {
+  width: 12px;
+  height: 40px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to top,
+    var(--chart-gradient-low),
+    var(--chart-gradient-high)
+  );
+}
+
+.chart-legend-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 40px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
 }
 
 /* Chart Stats */
