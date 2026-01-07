@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { generateCodeVerifier, generateCodeChallenge } from '../auth';
+import { SPOTIFY_CLIENT_ID, SPOTIFY_AUTH_URL, SPOTIFY_SCOPES } from '../config';
 import './login.css';
 
 // Spotify icon SVG (from official brand assets)
@@ -21,16 +22,16 @@ function Login(): ReactElement {
     sessionStorage.setItem('code_verifier', codeVerifier);
 
     const params = new URLSearchParams({
-      client_id: CLIENT_ID,
+      client_id: SPOTIFY_CLIENT_ID,
       response_type: 'code',
       redirect_uri: window.location.origin + window.location.pathname,
-      scope: 'user-read-private user-library-read playlist-read-private streaming user-read-playback-state user-modify-playback-state',
+      scope: SPOTIFY_SCOPES,
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
       show_dialog: 'true',
     });
 
-    window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+    window.location.href = `${SPOTIFY_AUTH_URL}/authorize?${params}`;
   }
 
   return (

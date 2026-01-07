@@ -1,5 +1,6 @@
 // PKCE (Proof Key for Code Exchange) utilities for Spotify OAuth
 
+import { SPOTIFY_CLIENT_ID, SPOTIFY_AUTH_URL } from './config';
 import type { SpotifyTokenResponse } from './types/spotify';
 
 export function generateCodeVerifier(length = 64): string {
@@ -33,13 +34,13 @@ export async function exchangeCodeForToken(
   codeVerifier: string,
   redirectUri: string
 ): Promise<SpotifyTokenResponse> {
-  const response = await fetch('https://accounts.spotify.com/api/token', {
+  const response = await fetch(`${SPOTIFY_AUTH_URL}/api/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: CLIENT_ID,
+      client_id: SPOTIFY_CLIENT_ID,
       grant_type: 'authorization_code',
       code,
       redirect_uri: redirectUri,
@@ -56,13 +57,13 @@ export async function exchangeCodeForToken(
 }
 
 export async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenResponse> {
-  const response = await fetch('https://accounts.spotify.com/api/token', {
+  const response = await fetch(`${SPOTIFY_AUTH_URL}/api/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: CLIENT_ID,
+      client_id: SPOTIFY_CLIENT_ID,
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     }),
