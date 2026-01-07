@@ -37,15 +37,16 @@ function App() {
           return;
         }
 
+        // Clear URL immediately to prevent double-execution in React StrictMode
+        // (Spotify auth codes are single-use)
         const redirectUri = window.location.origin + window.location.pathname;
+        window.history.replaceState(null, '', window.location.pathname);
+        sessionStorage.removeItem('code_verifier');
+
         const tokenData = await exchangeCodeForToken(code, codeVerifier, redirectUri);
 
         // Store tokens
         saveTokens(tokenData);
-
-        // Clean up
-        sessionStorage.removeItem('code_verifier');
-        window.history.replaceState(null, '', window.location.pathname);
 
         setIsAuthenticated(true);
         await loadTracks();
