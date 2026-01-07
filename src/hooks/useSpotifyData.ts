@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSpotifyCache } from '../cache';
-import { fetchAllSavedTracks, fetchArtistsBatch, SpotifyApiError } from '../services/spotifyApi';
+import { fetchAllSavedTracks, fetchArtistsBatch } from '../services/spotifyApi';
 import type { SavedTrack, ArtistMap } from '../types/spotify';
 
 interface SpotifyDataState {
@@ -81,7 +81,9 @@ export function useSpotifyData(
     } catch (err) {
       console.error('Failed to load Spotify data:', err);
 
-      if (err instanceof SpotifyApiError && err.status === 401) {
+      // Check for 401 status on any error type (SpotifyApiError or plain Error from tokenService)
+      const errorStatus = (err as { status?: number }).status;
+      if (errorStatus === 401) {
         onAuthError?.();
         return;
       }

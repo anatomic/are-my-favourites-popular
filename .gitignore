@@ -5,3 +5,4 @@ dist
 # Claude Code tool directories
 .claude-flow/
 .swarm/
+.env

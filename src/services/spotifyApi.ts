@@ -50,6 +50,11 @@ async function apiRequest<T>(
     );
   }
 
+  // Handle 204 No Content responses (no body to parse)
+  if (response.status === 204) {
+    return null as T;
+  }
+
   return response.json();
 }
 
@@ -167,6 +172,7 @@ export async function pausePlayback(deviceId?: string): Promise<void> {
 
 /**
  * Get current playback state
+ * Returns null when no active player (204 No Content)
  */
 export async function getPlaybackState(): Promise<{
   is_playing: boolean;
@@ -174,15 +180,8 @@ export async function getPlaybackState(): Promise<{
   progress_ms: number;
   device: { id: string } | null;
 } | null> {
-  try {
-    return await apiRequest('v1/me/player');
-  } catch (error) {
-    // 204 No Content means no active player
-    if (error instanceof SpotifyApiError && error.status === 204) {
-      return null;
-    }
-    throw error;
-  }
+  // apiRequest handles 204 No Content by returning null
+  return apiRequest('v1/me/player');
 }
 
 /**
