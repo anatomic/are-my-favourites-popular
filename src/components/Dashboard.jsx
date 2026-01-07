@@ -31,7 +31,6 @@ const COLORS = {
 function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
-  const previewAudioRef = useRef(null);
   const [bucket, setBucket] = useState('year');
   const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1400) : 800;
   const maxHeight = typeof window !== 'undefined' ? Math.min(window.innerHeight - 280, 500) : 400;
@@ -44,39 +43,17 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
   // Spotify Web Playback SDK
   const player = useSpotifyPlayer(getAccessToken);
 
-  // Play a track - use SDK for Premium, preview for others
+  // Play a track - SDK only (Premium required)
   const playTrack = useCallback(async (track) => {
-    // Stop any existing preview audio
-    if (previewAudioRef.current) {
-      previewAudioRef.current.pause();
-      previewAudioRef.current = null;
+    // Only play if SDK is ready and user has Premium
+    if (!player.isReady || !player.isPremium) {
+      // Player component shows "Premium required" message
+      return;
     }
 
-    // Try SDK playback for Premium users
-    if (player.isReady && player.isPremium && player.deviceId) {
-      const trackUri = `spotify:track:${track.id}`;
-      const success = await player.play(trackUri);
-
-      // If SDK playback failed, fall back to preview
-      if (!success && track.preview_url) {
-        console.log('SDK playback failed, falling back to preview');
-        previewAudioRef.current = new Audio(track.preview_url);
-        previewAudioRef.current.play();
-      }
-    } else if (track.preview_url) {
-      // Fallback to preview for non-Premium or if SDK not ready
-      previewAudioRef.current = new Audio(track.preview_url);
-      previewAudioRef.current.play();
-    }
+    const trackUri = `spotify:track:${track.id}`;
+    await player.play(trackUri);
   }, [player]);
-
-  // Stop preview audio
-  const stopPreview = useCallback(() => {
-    if (previewAudioRef.current) {
-      previewAudioRef.current.pause();
-      previewAudioRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     if (!tracks || !svgRef.current) return;
@@ -382,6 +359,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
         position={player.position}
         duration={player.duration}
         error={player.error}
+        currentDevice={player.currentDevice}
         onTogglePlay={player.togglePlay}
         onSeek={player.seek}
         onPrevious={player.previousTrack}

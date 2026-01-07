@@ -19,10 +19,14 @@
 <body>
   <div id="root"></div>
   <script>
-    // Stub for Spotify SDK - will be called when SDK is ready
-    // React will check window.Spotify to know if SDK is already loaded
+    // Spotify SDK ready detection
+    // This callback fires when the SDK script loads and initializes
+    // React hook will check both window.Spotify and window.spotifySDKReady
+    // to handle race conditions where SDK loads before/after React mounts
+    window.spotifySDKReady = false;
     window.onSpotifyWebPlaybackSDKReady = function() {
       window.spotifySDKReady = true;
+      console.log('Spotify Web Playback SDK ready');
     };
   </script>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
