@@ -3,9 +3,12 @@
  *
  * Extracts chart dimensions, margins, and D3 scales from the Dashboard component.
  * This hook handles all the derived state calculations for the chart.
+ *
+ * Modernizations:
+ * - Uses ResizeObserver for responsive chart sizing
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, type RefObject } from 'react';
 import { min, max } from 'd3-array';
 import { scalePow, scaleTime, scaleLinear, type ScalePower, type ScaleTime, type ScaleLinear } from 'd3-scale';
 import { interpolateRgb } from 'd3-interpolate';
@@ -49,15 +52,53 @@ const DEFAULT_MARGINS: ChartMargins = {
 };
 
 /**
- * Calculate responsive chart dimensions based on window size
+ * Hook to track container size using ResizeObserver
+ * Returns responsive dimensions for the chart
  */
-function calculateDimensions(margins: ChartMargins = DEFAULT_MARGINS): ChartDimensions {
-  const width = typeof window !== 'undefined'
-    ? Math.min(window.innerWidth - 80, 1400)
-    : 800;
-  const height = typeof window !== 'undefined'
-    ? Math.min(window.innerHeight - 280, 500)
-    : 400;
+export function useContainerSize(
+  containerRef: RefObject<HTMLElement | null>
+): { width: number; height: number } {
+  const [size, setSize] = useState({ width: 800, height: 400 });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Debounce resize updates for performance
+    let rafId: number;
+    const observer = new ResizeObserver((entries) => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const entry = entries[0];
+        if (entry) {
+          const { width } = entry.contentRect;
+          // Calculate height based on aspect ratio, capped
+          const height = Math.min(Math.max(width * 0.4, 300), 500);
+          setSize({ width, height });
+        }
+      });
+    });
+
+    observer.observe(container);
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
+  }, [containerRef]);
+
+  return size;
+}
+
+/**
+ * Calculate chart dimensions from container size
+ */
+function calculateDimensions(
+  containerWidth: number,
+  containerHeight: number,
+  margins: ChartMargins = DEFAULT_MARGINS
+): ChartDimensions {
+  const width = Math.min(containerWidth, 1400);
+  const height = containerHeight;
 
   return {
     width,
@@ -82,9 +123,13 @@ function createColorScale(): (popularity: number) => string {
  * Hook for chart configuration and scales
  *
  * @param tracks - Array of saved tracks to visualize
+ * @param containerSize - Container dimensions from useContainerSize
  * @returns Chart configuration including dimensions and scales
  */
-export function useChartConfig(tracks: SavedTrack[] | null): ChartConfig | null {
+export function useChartConfig(
+  tracks: SavedTrack[] | null,
+  containerSize: { width: number; height: number } = { width: 800, height: 400 }
+): ChartConfig | null {
   return useMemo(() => {
     if (!tracks || tracks.length === 0) return null;
 
@@ -93,8 +138,8 @@ export function useChartConfig(tracks: SavedTrack[] | null): ChartConfig | null 
       (a, b) => new Date(a.added_at).getTime() - new Date(b.added_at).getTime()
     );
 
-    // Calculate dimensions
-    const dimensions = calculateDimensions();
+    // Calculate dimensions from container size
+    const dimensions = calculateDimensions(containerSize.width, containerSize.height);
     const { width, height, margins } = dimensions;
 
     // Calculate data extents
@@ -129,7 +174,7 @@ export function useChartConfig(tracks: SavedTrack[] | null): ChartConfig | null 
       sortedTracks,
       maxPopularity,
     };
-  }, [tracks]);
+  }, [tracks, containerSize.width, containerSize.height]);
 }
 
 export { DEFAULT_MARGINS };

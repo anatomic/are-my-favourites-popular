@@ -4,14 +4,22 @@
  * Pure functions for rendering different parts of the D3 chart.
  * Each function handles a specific visual element, making the code
  * easier to test, maintain, and modify independently.
+ *
+ * Modernizations:
+ * - Uses D3 transitions for smooth animations
+ * - Uses .join() pattern for cleaner data binding
  */
 
-import type { Selection } from 'd3-selection';
+import { type Selection } from 'd3-selection';
+import 'd3-transition'; // Extends Selection prototype with transition()
 import { axisBottom, axisLeft } from 'd3-axis';
 import { timeYear } from 'd3-time';
 import type { ChartConfig } from '../../hooks/useChartConfig';
 import type { SavedTrack, SpotifyTrack } from '../../types/spotify';
 import { cssColors } from '../../utils/cssVariables';
+
+// Animation duration in milliseconds
+const TRANSITION_DURATION = 400;
 
 type SVGSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -37,6 +45,7 @@ export function renderGradientDef(svg: SVGSelection): void {
 
 /**
  * Render horizontal grid lines
+ * Uses .join() pattern for cleaner data binding
  */
 export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
   const { dimensions, scales, maxPopularity } = config;
@@ -47,17 +56,30 @@ export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
     v => v <= Math.ceil(maxPopularity / 10) * 10
   );
 
-  svg.selectAll('.grid-line')
+  svg.selectAll<SVGLineElement, number>('.grid-line')
     .data(gridLines)
-    .enter()
-    .append('line')
-    .attr('class', 'grid-line')
-    .attr('x1', margins.left)
-    .attr('x2', width - margins.right)
-    .attr('y1', (d: number) => y(d))
-    .attr('y2', (d: number) => y(d))
-    .attr('stroke', cssColors.chartGrid)
-    .attr('stroke-width', 1);
+    .join(
+      enter => enter
+        .append('line')
+        .attr('class', 'grid-line')
+        .attr('x1', margins.left)
+        .attr('x2', width - margins.right)
+        .attr('y1', (d: number) => y(d))
+        .attr('y2', (d: number) => y(d))
+        .attr('stroke', cssColors.chartGrid)
+        .attr('stroke-width', 1)
+        .attr('opacity', 0)
+        .call(sel => (sel as any).transition()
+          .duration(TRANSITION_DURATION)
+          .attr('opacity', 1)
+        ),
+      update => update,
+      exit => exit.call(sel => (sel as any).transition()
+        .duration(TRANSITION_DURATION / 2)
+        .attr('opacity', 0)
+        .remove()
+      )
+    );
 }
 
 /**
@@ -101,6 +123,7 @@ export interface DataPointHandlers {
 
 /**
  * Render data point circles
+ * Uses .join() pattern with staggered enter transitions for visual appeal
  */
 export function renderDataPoints(
   svg: SVGSelection,
@@ -110,44 +133,75 @@ export function renderDataPoints(
   const { scales, sortedTracks, maxPopularity } = config;
   const { x, y, radius, color } = scales;
 
-  svg.selectAll('circle')
-    .data(sortedTracks)
-    .enter()
-    .append('circle')
-    .attr('r', (d: SavedTrack) =>
-      d.track.popularity === maxPopularity
-        ? radius(d.track.popularity) * 1.2
-        : radius(d.track.popularity)
-    )
-    .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
-    .attr('cy', (d: SavedTrack) => y(d.track.popularity))
-    .attr('fill', (d: SavedTrack) =>
-      d.track.popularity === maxPopularity
-        ? cssColors.spotifyGreen
-        : color(d.track.popularity)
-    )
-    .attr('opacity', (d: SavedTrack) =>
-      d.track.popularity === maxPopularity ? 1 : 0.75
-    )
-    .attr('stroke', (d: SavedTrack) =>
-      d.track.popularity === maxPopularity
-        ? cssColors.spotifyGreenLight
-        : 'rgba(0,0,0,0.2)'
-    )
-    .attr('stroke-width', (d: SavedTrack) =>
-      d.track.popularity === maxPopularity ? 2 : 0.5
-    )
-    .style('cursor', 'pointer')
-    .on('click', function (_event: MouseEvent, d: SavedTrack) {
-      handlers.onClick(d.track);
-    })
-    .on('mouseover', function (event: MouseEvent, d: SavedTrack) {
-      const popColor = color(d.track.popularity);
-      handlers.onMouseOver(event, d, popColor);
-    })
-    .on('mouseout', function (event: MouseEvent, d: SavedTrack) {
-      handlers.onMouseOut(event, d);
-    });
+  // Calculate final attributes for each track
+  const getRadius = (d: SavedTrack) =>
+    d.track.popularity === maxPopularity
+      ? radius(d.track.popularity) * 1.2
+      : radius(d.track.popularity);
+
+  const getFill = (d: SavedTrack) =>
+    d.track.popularity === maxPopularity
+      ? cssColors.spotifyGreen
+      : color(d.track.popularity);
+
+  const getOpacity = (d: SavedTrack) =>
+    d.track.popularity === maxPopularity ? 1 : 0.75;
+
+  const getStroke = (d: SavedTrack) =>
+    d.track.popularity === maxPopularity
+      ? cssColors.spotifyGreenLight
+      : 'rgba(0,0,0,0.2)';
+
+  const getStrokeWidth = (d: SavedTrack) =>
+    d.track.popularity === maxPopularity ? 2 : 0.5;
+
+  svg.selectAll<SVGCircleElement, SavedTrack>('circle.data-point')
+    .data(sortedTracks, (d: SavedTrack) => d.track.id)
+    .join(
+      enter => enter
+        .append('circle')
+        .attr('class', 'data-point')
+        .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
+        .attr('cy', (d: SavedTrack) => y(d.track.popularity))
+        .attr('r', 0) // Start at 0 for grow animation
+        .attr('fill', getFill)
+        .attr('opacity', 0)
+        .attr('stroke', getStroke)
+        .attr('stroke-width', getStrokeWidth)
+        .style('cursor', 'pointer')
+        .on('click', function (_event: MouseEvent, d: SavedTrack) {
+          handlers.onClick(d.track);
+        })
+        .on('mouseover', function (event: MouseEvent, d: SavedTrack) {
+          const popColor = color(d.track.popularity);
+          handlers.onMouseOver(event, d, popColor);
+        })
+        .on('mouseout', function (event: MouseEvent, d: SavedTrack) {
+          handlers.onMouseOut(event, d);
+        })
+        .call(sel => (sel as any).transition()
+          .duration(TRANSITION_DURATION)
+          .delay((_d: SavedTrack, i: number) => Math.min(i * 2, 500)) // Staggered entry, capped at 500ms
+          .attr('r', getRadius)
+          .attr('opacity', getOpacity)
+        ),
+      update => update
+        .call(sel => (sel as any).transition()
+          .duration(TRANSITION_DURATION)
+          .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
+          .attr('cy', (d: SavedTrack) => y(d.track.popularity))
+          .attr('r', getRadius)
+          .attr('fill', getFill)
+          .attr('opacity', getOpacity)
+        ),
+      exit => exit
+        .call(sel => (sel as any).transition()
+          .duration(TRANSITION_DURATION / 2)
+          .attr('r', 0)
+          .attr('opacity', 0)
+          .remove()
+        )
+    );
 }
 
 /**

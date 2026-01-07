@@ -5,7 +5,7 @@ import { mean, max } from 'd3-array';
 import Stats from './Stats';
 import Player from './Player';
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer';
-import { useChartConfig } from '../hooks/useChartConfig';
+import { useChartConfig, useContainerSize } from '../hooks/useChartConfig';
 import {
   renderGradientDef,
   renderGridLines,
@@ -29,9 +29,13 @@ interface ChartStats {
 function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardProps): ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  // Responsive chart sizing via ResizeObserver
+  const containerSize = useContainerSize(chartContainerRef);
 
   // Chart configuration (dimensions, scales, sorted data)
-  const chartConfig = useChartConfig(tracks);
+  const chartConfig = useChartConfig(tracks, containerSize);
 
   // Calculate chart stats for display
   const chartStats = useMemo((): ChartStats | null => {
@@ -108,29 +112,36 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
     }
   }, [chartConfig]);
 
-  // Render the D3 chart
+  // Render the D3 chart with modern join() pattern
+  // Only clears on first render; subsequent renders animate changes
   useEffect(() => {
     if (!chartConfig || !svgRef.current) return;
 
     const svg = select(svgRef.current);
 
-    // Clear previous chart
-    svg.selectAll('*').remove();
+    // Check if this is the initial render (no gradient def yet)
+    const isInitialRender = svg.select('defs').empty();
 
-    // Render chart elements in order (back to front)
-    renderGradientDef(svg);
+    if (isInitialRender) {
+      // First render: set up static elements
+      renderGradientDef(svg);
+    }
+
+    // Clear and re-render structural elements (axes, grid, legend)
+    // These don't benefit from join() transitions
+    svg.selectAll('.grid-line, .x-axis, .y-axis, .axis-label, .legend').remove();
     renderGridLines(svg, chartConfig);
     renderAxes(svg, chartConfig);
+    renderLegend(svg, chartConfig);
+
+    // Data points use join() for smooth enter/update/exit transitions
     renderDataPoints(svg, chartConfig, {
       onClick: playTrack,
       onMouseOver: handleMouseOver,
       onMouseOut: handleMouseOut,
     });
-    renderLegend(svg, chartConfig);
 
   }, [chartConfig, playTrack, handleMouseOver, handleMouseOut]);
-
-  const chartHeight = chartConfig?.dimensions.height ?? 400;
 
   return (
     <div className="dashboard">
@@ -140,9 +151,9 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       </header>
 
       {tracks ? (
-        <div className="chart-container">
+        <div className="chart-container" ref={chartContainerRef}>
           <div className="chart-wrapper">
-            <svg ref={svgRef} width="100%" height={chartHeight}></svg>
+            <svg ref={svgRef} width={containerSize.width} height={containerSize.height}></svg>
             <div ref={tooltipRef} className="tooltip"></div>
           </div>
           {chartStats && (
