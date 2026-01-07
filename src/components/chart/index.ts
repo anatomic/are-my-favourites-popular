@@ -10,7 +10,6 @@ export {
   renderAxes,
   renderDataPoints,
   setupDataPointHandlers,
-  renderLegend,
   createTooltipContent,
   type DataPointHandlers,
 } from './chartRenderers';

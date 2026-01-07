@@ -12,7 +12,6 @@ import {
   renderAxes,
   renderDataPoints,
   setupDataPointHandlers,
-  renderLegend,
   createTooltipContent,
 } from './chart';
 import type { DashboardProps, SavedTrack, SpotifyTrack } from '../types/spotify';
@@ -137,12 +136,11 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       onMouseOut: handleMouseOut,
     });
 
-    // Clear and re-render structural elements (axes, grid, legend)
+    // Clear and re-render structural elements (axes, grid)
     // These appear instantly without animation
-    svg.selectAll('.grid-line, .x-axis, .y-axis, .axis-label, .legend').remove();
+    svg.selectAll('.grid-line, .x-axis, .y-axis, .axis-label').remove();
     renderGridLines(svg, chartConfig);
     renderAxes(svg, chartConfig);
-    renderLegend(svg, chartConfig);
 
     // Check if this is the first data render (no circles yet)
     const container = svg.select('g.data-points-container');
@@ -181,6 +179,13 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
               style={{ visibility: chartConfig ? 'visible' : 'hidden' }}
             ></svg>
             <div ref={tooltipRef} className="tooltip"></div>
+          </div>
+          <div className="chart-legend">
+            <div className="chart-legend-gradient"></div>
+            <div className="chart-legend-labels">
+              <span>High popularity</span>
+              <span>Low popularity</span>
+            </div>
           </div>
           {chartStats && (
             <div className="chart-stats">
