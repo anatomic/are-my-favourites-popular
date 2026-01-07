@@ -169,6 +169,21 @@ export class CacheService {
   }
 
   /**
+   * Get multiple values by keys in a single batch operation
+   * Much faster than calling get() multiple times
+   */
+  async getMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    await this._ensureInit();
+
+    try {
+      return await this._activeAdapter!.getMany<T>(storeName, keys);
+    } catch {
+      console.warn('CacheService: getMany failed, trying fallback');
+      return this._tryFallbackGetMany<T>(storeName, keys);
+    }
+  }
+
+  /**
    * Check if a cached entry has expired
    */
   isExpired(cachedAt: number | undefined, ttl: number): boolean {
@@ -200,6 +215,43 @@ export class CacheService {
     }
 
     return null;
+  }
+
+  /**
+   * Try fallback adapters for getMany operations
+   * Collects results from all available adapters for missing keys
+   */
+  private async _tryFallbackGetMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    const result = new Map<string, T>();
+    let remainingKeys = [...keys];
+
+    // Try localStorage if we're not already using it
+    if (this._activeAdapter !== this._localStorage && remainingKeys.length > 0) {
+      try {
+        const localResult = await this._localStorage.getMany<T>(storeName, remainingKeys);
+        for (const [key, value] of localResult.entries()) {
+          result.set(key, value);
+        }
+        // Filter out found keys
+        remainingKeys = remainingKeys.filter(key => !localResult.has(key));
+      } catch {
+        // Continue to memory
+      }
+    }
+
+    // Try memory as last resort for any remaining keys
+    if (this._activeAdapter !== this._memory && remainingKeys.length > 0) {
+      try {
+        const memoryResult = await this._memory.getMany<T>(storeName, remainingKeys);
+        for (const [key, value] of memoryResult.entries()) {
+          result.set(key, value);
+        }
+      } catch {
+        // Nothing more to try
+      }
+    }
+
+    return result;
   }
 
   /**

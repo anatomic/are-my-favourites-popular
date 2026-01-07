@@ -86,4 +86,23 @@ export class MemoryAdapter {
     if (!store) return [];
     return Array.from(store.values()) as T[];
   }
+
+  /**
+   * Get multiple values by keys
+   */
+  async getMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    const results = new Map<string, T>();
+    const store = this._stores.get(storeName);
+
+    if (!store) return results;
+
+    for (const key of keys) {
+      const value = store.get(key);
+      if (value !== undefined) {
+        results.set(key, value as T);
+      }
+    }
+
+    return results;
+  }
 }

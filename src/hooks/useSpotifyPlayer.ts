@@ -9,7 +9,9 @@ import type {
   SpotifyDevicesResponse,
 } from '../types/spotify';
 
-const POLL_INTERVAL = 1000; // Poll external playback state every second
+// Smart polling intervals - poll more frequently when playing
+const POLL_INTERVAL_PLAYING = 1000;  // 1 second when music is playing
+const POLL_INTERVAL_PAUSED = 10000;  // 10 seconds when paused/idle
 const PLAYER_NAME = 'Are My Favourites Popular?';
 
 // Singleton guard to prevent React StrictMode from creating multiple players
@@ -296,22 +298,69 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
     };
   }, [getAccessToken, fetchExternalPlaybackState]);
 
-  // Poll for external playback state
+  // Track whether tab is visible (for polling logic)
+  const isTabVisibleRef = useRef(!document.hidden);
+
+  // Effect 1: Set up visibility change listener (runs once when ready)
   useEffect(() => {
     if (!isReady) return;
 
-    // Initial fetch
-    fetchExternalPlaybackState();
+    const handleVisibilityChange = (): void => {
+      isTabVisibleRef.current = !document.hidden;
 
-    // Set up polling
-    pollIntervalRef.current = window.setInterval(fetchExternalPlaybackState, POLL_INTERVAL);
+      if (document.hidden) {
+        // Tab hidden - stop polling to save resources
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      } else {
+        // Tab visible - fetch immediately, polling will be restarted by effect 2
+        // due to state change after fetch completes
+        fetchExternalPlaybackState();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isReady, fetchExternalPlaybackState]);
+
+  // Effect 2: Manage polling interval based on playback state
+  // Restarts whenever playback state or tab visibility changes
+  useEffect(() => {
+    if (!isReady) return;
+
+    const isCurrentlyPlaying = externalPlayerState?.is_playing ?? false;
+
+    // Function to start polling with appropriate interval
+    const startPolling = (): void => {
+      // Clear existing interval
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+
+      // Don't poll if tab is hidden
+      if (!isTabVisibleRef.current) return;
+
+      // Use smart interval based on playback state
+      const interval = isCurrentlyPlaying ? POLL_INTERVAL_PLAYING : POLL_INTERVAL_PAUSED;
+      pollIntervalRef.current = window.setInterval(fetchExternalPlaybackState, interval);
+    };
+
+    // Initial fetch and start polling
+    fetchExternalPlaybackState();
+    startPolling();
 
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
     };
-  }, [fetchExternalPlaybackState, isReady]);
+  }, [fetchExternalPlaybackState, isReady, externalPlayerState?.is_playing]);
 
   // Determine if playback is on our web player
   const isPlayingLocally = Boolean(deviceId && activeDeviceId === deviceId);

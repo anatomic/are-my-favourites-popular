@@ -253,6 +253,59 @@ export class IndexedDBAdapter {
   }
 
   /**
+   * Get multiple values by keys in a single transaction
+   * Much faster than multiple individual get() calls
+   */
+  async getMany<T>(storeName: string, keys: string[]): Promise<Map<string, T>> {
+    const results = new Map<string, T>();
+
+    if (keys.length === 0) {
+      return results;
+    }
+
+    try {
+      const db = await this._ensureDb();
+
+      return new Promise((resolve) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+
+        // Collect results from individual requests
+        for (const key of keys) {
+          const request = store.get(key);
+
+          request.onsuccess = () => {
+            if (request.result) {
+              results.set(key, request.result as T);
+            }
+          };
+
+          // Errors on individual requests don't abort transaction
+          // We just won't have that key in results
+        }
+
+        // Wait for the entire transaction to complete before resolving
+        // This ensures all data is committed and consistent
+        transaction.oncomplete = () => {
+          resolve(results);
+        };
+
+        transaction.onerror = () => {
+          console.warn('IndexedDBAdapter: getMany transaction failed');
+          resolve(results);
+        };
+
+        transaction.onabort = () => {
+          console.warn('IndexedDBAdapter: getMany transaction aborted');
+          resolve(results);
+        };
+      });
+    } catch {
+      return results;
+    }
+  }
+
+  /**
    * Close the database connection
    */
   close(): void {
