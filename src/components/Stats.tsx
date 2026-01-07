@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
 import type { StatsProps, SavedTrack, SpotifyArtist } from '../types/spotify';
+import { cssColors } from '../utils/cssVariables';
 import './stats.css';
 
 // Convert string to title case
@@ -50,13 +51,8 @@ interface YearlySummaryItem {
 
 type SortMode = 'count' | 'popularity';
 
-// Spotify secondary brand colors for highlights
-const HIGHLIGHT_COLORS = {
-  busiest: '#FF9E95',    // Coral - most tracks added
-  popular: '#B388FF',    // Light purple - highest avg popularity
-  niche: '#1DB954',      // Spotify Green - lowest avg popularity (most niche)
-  growth: '#F59B23',     // Amber - biggest growth year
-};
+// Highlight colors loaded from CSS variables at runtime
+// See src/styles/variables.css for the source of truth
 
 function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
 
@@ -356,10 +352,10 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                 {yearlySummary.map(y => {
                   // Collect all highlights for this year
                   const highlights = [];
-                  if (y.countRank === 1) highlights.push({ color: HIGHLIGHT_COLORS.busiest, title: 'Most tracks added' });
-                  if (y.growthRank === 1 && y.growth > 0) highlights.push({ color: HIGHLIGHT_COLORS.growth, title: `Biggest growth (+${y.growth})` });
-                  if (y.popRank === 1) highlights.push({ color: HIGHLIGHT_COLORS.popular, title: 'Most popular' });
-                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push({ color: HIGHLIGHT_COLORS.niche, title: 'Most niche' });
+                  if (y.countRank === 1) highlights.push({ color: cssColors.highlightBusiest, title: 'Most tracks added' });
+                  if (y.growthRank === 1 && y.growth > 0) highlights.push({ color: cssColors.highlightGrowth, title: `Biggest growth (+${y.growth})` });
+                  if (y.popRank === 1) highlights.push({ color: cssColors.highlightPopular, title: 'Most popular' });
+                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push({ color: cssColors.highlightNiche, title: 'Most niche' });
 
                   const yearColor = highlights.length > 0 ? highlights[0].color : undefined;
                   const yearTitle = highlights.map(h => h.title).join(', ');
@@ -381,8 +377,8 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                 <td className="stats-yearly-label">Tracks Added</td>
                 {yearlySummary.map(y => {
                   const highlights = [];
-                  if (y.countRank === 1) highlights.push(HIGHLIGHT_COLORS.busiest);
-                  if (y.growthRank === 1 && y.growth > 0) highlights.push(HIGHLIGHT_COLORS.growth);
+                  if (y.countRank === 1) highlights.push(cssColors.highlightBusiest);
+                  if (y.growthRank === 1 && y.growth > 0) highlights.push(cssColors.highlightGrowth);
                   const bgColor = highlights[0] ? `${highlights[0]}15` : undefined;
                   return (
                     <td key={y.year} style={bgColor ? { backgroundColor: bgColor } : undefined}>
@@ -395,8 +391,8 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                 <td className="stats-yearly-label">Avg Popularity</td>
                 {yearlySummary.map(y => {
                   const highlights = [];
-                  if (y.popRank === 1) highlights.push(HIGHLIGHT_COLORS.popular);
-                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push(HIGHLIGHT_COLORS.niche);
+                  if (y.popRank === 1) highlights.push(cssColors.highlightPopular);
+                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push(cssColors.highlightNiche);
                   const bgColor = highlights[0] ? `${highlights[0]}15` : undefined;
                   return (
                     <td key={y.year} style={bgColor ? { backgroundColor: bgColor } : undefined}>
@@ -409,19 +405,19 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
           </table>
           <div className="stats-yearly-legend">
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.busiest }} />
+              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightBusiest }} />
               Most tracks
             </span>
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.growth }} />
+              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightGrowth }} />
               Biggest growth
             </span>
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.popular }} />
+              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightPopular }} />
               Most popular
             </span>
             <span className="legend-item">
-              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.niche }} />
+              <span className="indicator-sample" style={{ backgroundColor: cssColors.highlightNiche }} />
               Most niche
             </span>
           </div>

@@ -23,6 +23,23 @@
   --chart-area: rgba(29, 185, 84, 0.1);
   --chart-line: rgba(29, 185, 84, 0.4);
 
+  /* Data Viz - Gradient endpoints */
+  --chart-gradient-low: #6900BA;
+  --chart-gradient-high: #FF9E95;
+
+  /* Data Viz - Highlight colors */
+  --highlight-busiest: #FF9E95;
+  --highlight-popular: #B388FF;
+  --highlight-niche: #1DB954;
+  --highlight-growth: #F59B23;
+
+  /* Semantic colors */
+  --error-color: #ff6b6b;
+  --heart-color: #e05a5a;
+
+  /* Chart grid */
+  --chart-grid: rgba(255, 255, 255, 0.06);
+
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.1);
   --border-default: rgba(255, 255, 255, 0.2);

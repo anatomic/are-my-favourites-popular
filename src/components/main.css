@@ -187,6 +187,26 @@ a:hover {
   max-width: 400px;
 }
 
+/* Error Boundary */
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.error-boundary__content {
+  max-width: 400px;
+}
+
+.error-boundary__message {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
 /* Utility Classes */
 .text-center { text-align: center; }
 .text-muted { color: var(--text-muted); }

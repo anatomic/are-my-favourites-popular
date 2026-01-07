@@ -10,24 +10,12 @@ import Stats from './Stats';
 import Player from './Player';
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer';
 import type { DashboardProps, SavedTrack, SpotifyTrack } from '../types/spotify';
+import { cssColors } from '../utils/cssVariables';
 import './dashboard.css';
 import './graph.css';
 
-// Spotify gradient colors (from brand assets)
-const GRADIENT = {
-  low: '#6900BA',    // Purple - low popularity
-  high: '#FF9E95',   // Coral - high popularity
-};
-
-// Design system colors
-const COLORS = {
-  green: '#1DB954',
-  greenLight: '#1ED760',
-  surface: '#282828',
-  muted: '#535353',
-  text: '#B3B3B3',
-  grid: 'rgba(255, 255, 255, 0.06)',
-};
+// Colors are loaded from CSS variables at runtime via cssColors
+// See src/styles/variables.css for the source of truth
 
 interface ChartStats {
   total: number;
@@ -105,10 +93,10 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
 
     gradient.append('stop')
       .attr('offset', '0%')
-      .attr('stop-color', GRADIENT.low);
+      .attr('stop-color', cssColors.chartGradientLow);
     gradient.append('stop')
       .attr('offset', '100%')
-      .attr('stop-color', GRADIENT.high);
+      .attr('stop-color', cssColors.chartGradientHigh);
 
     // Scales
     const first = min(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
@@ -128,7 +116,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
     // Color scale based on popularity
     const colorScale = (popularity: number): string => {
       const t = popularity / 100;
-      return interpolateRgb(GRADIENT.low, GRADIENT.high)(t);
+      return interpolateRgb(cssColors.chartGradientLow, cssColors.chartGradientHigh)(t);
     };
 
     // Axes
@@ -146,7 +134,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       .attr('x2', maxWidth - margin.right)
       .attr('y1', (d: number) => y(d))
       .attr('y2', (d: number) => y(d))
-      .attr('stroke', COLORS.grid)
+      .attr('stroke', cssColors.chartGrid)
       .attr('stroke-width', 1);
 
     // Draw axes
@@ -181,9 +169,9 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       .attr('r', (d: SavedTrack) => d.track.popularity === maxPop ? r(d.track.popularity) * 1.2 : r(d.track.popularity))
       .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
       .attr('cy', (d: SavedTrack) => y(d.track.popularity))
-      .attr('fill', (d: SavedTrack) => d.track.popularity === maxPop ? COLORS.green : colorScale(d.track.popularity))
+      .attr('fill', (d: SavedTrack) => d.track.popularity === maxPop ? cssColors.spotifyGreen : colorScale(d.track.popularity))
       .attr('opacity', (d: SavedTrack) => d.track.popularity === maxPop ? 1 : 0.75)
-      .attr('stroke', (d: SavedTrack) => d.track.popularity === maxPop ? COLORS.greenLight : 'rgba(0,0,0,0.2)')
+      .attr('stroke', (d: SavedTrack) => d.track.popularity === maxPop ? cssColors.spotifyGreenLight : 'rgba(0,0,0,0.2)')
       .attr('stroke-width', (d: SavedTrack) => d.track.popularity === maxPop ? 2 : 0.5)
       .style('cursor', 'pointer')
       .on('click', function (_event: MouseEvent, d: SavedTrack) {

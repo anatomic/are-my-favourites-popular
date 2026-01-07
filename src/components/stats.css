@@ -318,14 +318,6 @@
   white-space: nowrap;
 }
 
-/* Legend indicator samples */
-.indicator-sample {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
 /* Legend for indicators */
 .stats-yearly-legend {
   display: flex;
