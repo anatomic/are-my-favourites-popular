@@ -5,6 +5,8 @@
  */
 
 export class MemoryAdapter {
+  private _stores: Map<string, Map<string, unknown>>;
+
   constructor() {
     this._stores = new Map();
   }
@@ -13,41 +15,41 @@ export class MemoryAdapter {
    * Check if this adapter is available
    * Memory adapter is always available
    */
-  isAvailable() {
+  isAvailable(): boolean {
     return true;
   }
 
   /**
    * Initialize the adapter (no-op for memory)
    */
-  async init() {
+  async init(): Promise<boolean> {
     return true;
   }
 
   /**
    * Get a value from the specified store
    */
-  async get(storeName, key) {
+  async get<T>(storeName: string, key: string): Promise<T | null> {
     const store = this._stores.get(storeName);
     if (!store) return null;
-    return store.get(key) || null;
+    return (store.get(key) as T) || null;
   }
 
   /**
    * Set a value in the specified store
    */
-  async set(storeName, key, value) {
+  async set<T>(storeName: string, key: string, value: T): Promise<boolean> {
     if (!this._stores.has(storeName)) {
       this._stores.set(storeName, new Map());
     }
-    this._stores.get(storeName).set(key, value);
+    this._stores.get(storeName)!.set(key, value);
     return true;
   }
 
   /**
    * Delete a value from the specified store
    */
-  async delete(storeName, key) {
+  async delete(storeName: string, key: string): Promise<boolean> {
     const store = this._stores.get(storeName);
     if (store) {
       store.delete(key);
@@ -58,7 +60,7 @@ export class MemoryAdapter {
   /**
    * Clear all data in a store, or all stores if no storeName provided
    */
-  async clear(storeName = null) {
+  async clear(storeName: string | null = null): Promise<boolean> {
     if (storeName) {
       this._stores.delete(storeName);
     } else {
@@ -70,18 +72,18 @@ export class MemoryAdapter {
   /**
    * Get all keys in a store
    */
-  async keys(storeName) {
+  async keys(storeName: string): Promise<string[]> {
     const store = this._stores.get(storeName);
     if (!store) return [];
-    return Array.from(store.keys());
+    return Array.from(store.keys()) as string[];
   }
 
   /**
    * Get all values in a store
    */
-  async getAll(storeName) {
+  async getAll<T>(storeName: string): Promise<T[]> {
     const store = this._stores.get(storeName);
     if (!store) return [];
-    return Array.from(store.values());
+    return Array.from(store.values()) as T[];
   }
 }

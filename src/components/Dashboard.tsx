@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import type { ReactElement } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { select } from 'd3-selection';
 import { min, max, mean } from 'd3-array';
 import { scalePow, scaleTime, scaleLinear } from 'd3-scale';
@@ -8,6 +9,7 @@ import { interpolateRgb } from 'd3-interpolate';
 import Stats from './Stats';
 import Player from './Player';
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer';
+import type { DashboardProps, SavedTrack, SpotifyTrack } from '../types/spotify';
 import './dashboard.css';
 import './graph.css';
 
@@ -27,9 +29,17 @@ const COLORS = {
   grid: 'rgba(255, 255, 255, 0.06)',
 };
 
-function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
-  const svgRef = useRef(null);
-  const tooltipRef = useRef(null);
+interface ChartStats {
+  total: number;
+  avgPopularity: number;
+  maxPopularity: number;
+  zeroCount: number;
+  topTrackId: string;
+}
+
+function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardProps): ReactElement {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1400) : 800;
   const maxHeight = typeof window !== 'undefined' ? Math.min(window.innerHeight - 280, 500) : 400;
 
@@ -38,13 +48,13 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
   const chartWidth = maxWidth - margin.left - margin.right;
 
   // Calculate chart stats
-  const chartStats = useMemo(() => {
+  const chartStats = useMemo((): ChartStats | null => {
     if (!tracks || tracks.length === 0) return null;
-    const avgPop = mean(tracks, d => d.track.popularity);
-    const maxPop = max(tracks, d => d.track.popularity);
-    const zeroCount = tracks.filter(d => d.track.popularity === 0).length;
+    const avgPop = mean(tracks, (d: SavedTrack) => d.track.popularity) ?? 0;
+    const maxPop = max(tracks, (d: SavedTrack) => d.track.popularity) ?? 0;
+    const zeroCount = tracks.filter((d: SavedTrack) => d.track.popularity === 0).length;
     // Find the track with highest popularity
-    const topTrack = tracks.reduce((best, curr) =>
+    const topTrack = tracks.reduce((best: SavedTrack, curr: SavedTrack) =>
       curr.track.popularity > best.track.popularity ? curr : best
     , tracks[0]);
     return {
@@ -61,7 +71,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
   const player = useSpotifyPlayer(getAccessToken);
 
   // Play a track - SDK only (Premium required)
-  const playTrack = useCallback(async (track) => {
+  const playTrack = useCallback(async (track: SpotifyTrack): Promise<void> => {
     // Only play if SDK is ready and user has Premium
     if (!player.isReady || !player.isPremium) {
       // Player component shows "Premium required" message
@@ -101,14 +111,14 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .attr('stop-color', GRADIENT.high);
 
     // Scales
-    const first = min(sortedTracks, (d) => new Date(d.added_at));
-    const last = max(sortedTracks, (d) => new Date(d.added_at));
+    const first = min(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
+    const last = max(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
     const today = new Date();
-    const maxPop = max(sortedTracks, (d) => d.track.popularity);
+    const maxPop = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
 
     const r = scalePow().exponent(1.5).domain([0, 100]).range([3, 18]);
     const x = scaleTime()
-      .domain([first, last > today ? last : today])
+      .domain([first ?? today, (last ?? today) > today ? (last ?? today) : today])
       .range([margin.left, maxWidth - margin.right])
       .nice();
     const y = scaleLinear()
@@ -116,7 +126,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .range([maxHeight - margin.bottom, margin.top]);
 
     // Color scale based on popularity
-    const colorScale = (popularity) => {
+    const colorScale = (popularity: number): string => {
       const t = popularity / 100;
       return interpolateRgb(GRADIENT.low, GRADIENT.high)(t);
     };
@@ -134,8 +144,8 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .attr('class', 'grid-line')
       .attr('x1', margin.left)
       .attr('x2', maxWidth - margin.right)
-      .attr('y1', d => y(d))
-      .attr('y2', d => y(d))
+      .attr('y1', (d: number) => y(d))
+      .attr('y2', (d: number) => y(d))
       .attr('stroke', COLORS.grid)
       .attr('stroke-width', 1);
 
@@ -168,19 +178,19 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .data(sortedTracks)
       .enter()
       .append('circle')
-      .attr('r', (d) => d.track.popularity === maxPop ? r(d.track.popularity) * 1.2 : r(d.track.popularity))
-      .attr('cx', (d) => x(new Date(d.added_at)))
-      .attr('cy', (d) => y(d.track.popularity))
-      .attr('fill', (d) => d.track.popularity === maxPop ? COLORS.green : colorScale(d.track.popularity))
-      .attr('opacity', (d) => d.track.popularity === maxPop ? 1 : 0.75)
-      .attr('stroke', (d) => d.track.popularity === maxPop ? COLORS.greenLight : 'rgba(0,0,0,0.2)')
-      .attr('stroke-width', (d) => d.track.popularity === maxPop ? 2 : 0.5)
+      .attr('r', (d: SavedTrack) => d.track.popularity === maxPop ? r(d.track.popularity) * 1.2 : r(d.track.popularity))
+      .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
+      .attr('cy', (d: SavedTrack) => y(d.track.popularity))
+      .attr('fill', (d: SavedTrack) => d.track.popularity === maxPop ? COLORS.green : colorScale(d.track.popularity))
+      .attr('opacity', (d: SavedTrack) => d.track.popularity === maxPop ? 1 : 0.75)
+      .attr('stroke', (d: SavedTrack) => d.track.popularity === maxPop ? COLORS.greenLight : 'rgba(0,0,0,0.2)')
+      .attr('stroke-width', (d: SavedTrack) => d.track.popularity === maxPop ? 2 : 0.5)
       .style('cursor', 'pointer')
-      .on('click', function (event, d) {
+      .on('click', function (_event: MouseEvent, d: SavedTrack) {
         // Play track via SDK or preview
         playTrack(d.track);
       })
-      .on('mouseover', function (event, d) {
+      .on('mouseover', function (this: SVGCircleElement, event: MouseEvent, d: SavedTrack) {
         select(this)
           .attr('opacity', 1)
           .attr('stroke', '#fff')
@@ -208,7 +218,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
           tooltip.style.top = `${event.pageY - 10}px`;
         }
       })
-      .on('mouseout', function (event, d) {
+      .on('mouseout', function (this: SVGCircleElement, _event: MouseEvent, d: SavedTrack) {
         select(this)
           .attr('opacity', 0.75)
           .attr('stroke', 'rgba(0,0,0,0.2)')

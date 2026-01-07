@@ -5,12 +5,29 @@
  * Works transparently - callers don't need to know about cache internals
  */
 
-import { getCacheService } from './CacheService.js';
-import { CACHE_CONFIG } from './constants.js';
+import { getCacheService, CacheService } from './CacheService';
+import { CACHE_CONFIG } from './constants';
+import type { SpotifyArtist, SavedTrack, TrackCacheEntry, ArtistCacheEntry, ArtistMap } from '../types/spotify';
 
 const { STORES, TRACK_CACHE_TTL, ARTIST_CACHE_TTL } = CACHE_CONFIG;
 
+interface CacheStats {
+  storageType: string;
+  trackCacheCount: number;
+  artistCacheCount: number;
+  trackTTL: number;
+  artistTTL: number;
+}
+
+interface CachedArtistsResult {
+  cachedArtists: ArtistMap;
+  uncachedIds: string[];
+}
+
 class SpotifyCache {
+  private _cacheService: CacheService;
+  private _initialized: boolean;
+
   constructor() {
     this._cacheService = getCacheService();
     this._initialized = false;
@@ -19,7 +36,7 @@ class SpotifyCache {
   /**
    * Initialize the cache
    */
-  async init() {
+  async init(): Promise<boolean> {
     if (this._initialized) return true;
     await this._cacheService.init();
     this._initialized = true;
@@ -29,7 +46,7 @@ class SpotifyCache {
   /**
    * Ensure cache is initialized
    */
-  async _ensureInit() {
+  private async _ensureInit(): Promise<void> {
     if (!this._initialized) {
       await this.init();
     }
@@ -41,11 +58,11 @@ class SpotifyCache {
    * Get cached tracks for a user
    * Returns null if cache is invalid or expired
    */
-  async getCachedTracks(userId) {
+  async getCachedTracks(userId: string): Promise<SavedTrack[] | null> {
     await this._ensureInit();
 
     const cacheKey = `user_${userId}`;
-    const cached = await this._cacheService.get(STORES.TRACKS, cacheKey);
+    const cached = await this._cacheService.get<TrackCacheEntry>(STORES.TRACKS, cacheKey);
 
     if (!cached) return null;
 
@@ -65,11 +82,11 @@ class SpotifyCache {
   /**
    * Cache tracks for a user
    */
-  async cacheTracks(userId, tracks) {
+  async cacheTracks(userId: string, tracks: SavedTrack[]): Promise<boolean> {
     await this._ensureInit();
 
     const cacheKey = `user_${userId}`;
-    const cacheEntry = {
+    const cacheEntry: TrackCacheEntry = {
       userId,
       items: tracks,
       cachedAt: Date.now()
@@ -81,7 +98,7 @@ class SpotifyCache {
   /**
    * Check if track cache is valid for a user
    */
-  async isTrackCacheValid(userId) {
+  async isTrackCacheValid(userId: string): Promise<boolean> {
     const tracks = await this.getCachedTracks(userId);
     return tracks !== null;
   }
@@ -89,7 +106,7 @@ class SpotifyCache {
   /**
    * Invalidate track cache for a user
    */
-  async invalidateTrackCache(userId) {
+  async invalidateTrackCache(userId: string): Promise<boolean> {
     await this._ensureInit();
     const cacheKey = `user_${userId}`;
     return this._cacheService.delete(STORES.TRACKS, cacheKey);
@@ -102,14 +119,14 @@ class SpotifyCache {
    * Returns a Map of artistId -> artistObject for cached artists
    * and a list of artist IDs that need to be fetched
    */
-  async getCachedArtists(artistIds) {
+  async getCachedArtists(artistIds: string[]): Promise<CachedArtistsResult> {
     await this._ensureInit();
 
-    const cachedArtists = new Map();
-    const uncachedIds = [];
+    const cachedArtists: ArtistMap = new Map();
+    const uncachedIds: string[] = [];
 
     for (const artistId of artistIds) {
-      const cached = await this._cacheService.get(STORES.ARTISTS, artistId);
+      const cached = await this._cacheService.get<ArtistCacheEntry>(STORES.ARTISTS, artistId);
 
       if (cached && !this._cacheService.isExpired(cached.cachedAt, ARTIST_CACHE_TTL)) {
         cachedArtists.set(artistId, cached.artist);
@@ -125,12 +142,12 @@ class SpotifyCache {
    * Cache artists
    * Accepts an array of artist objects with 'id' property
    */
-  async cacheArtists(artists) {
+  async cacheArtists(artists: SpotifyArtist[]): Promise<boolean> {
     await this._ensureInit();
 
     const results = await Promise.all(
       artists.map(artist =>
-        this._cacheService.set(STORES.ARTISTS, artist.id, {
+        this._cacheService.set<ArtistCacheEntry>(STORES.ARTISTS, artist.id, {
           artist,
           cachedAt: Date.now()
         })
@@ -143,7 +160,7 @@ class SpotifyCache {
   /**
    * Get list of artist IDs that aren't cached or have expired
    */
-  async getUncachedArtistIds(artistIds) {
+  async getUncachedArtistIds(artistIds: string[]): Promise<string[]> {
     const { uncachedIds } = await this.getCachedArtists(artistIds);
     return uncachedIds;
   }
@@ -154,7 +171,7 @@ class SpotifyCache {
    * Clear all cache data for a specific user
    * Clears tracks for the user but keeps artist cache (shared)
    */
-  async invalidateUserCache(userId) {
+  async invalidateUserCache(userId: string): Promise<boolean> {
     await this._ensureInit();
     return this.invalidateTrackCache(userId);
   }
@@ -162,7 +179,7 @@ class SpotifyCache {
   /**
    * Clear all cache data
    */
-  async clearAllCaches() {
+  async clearAllCaches(): Promise<boolean> {
     await this._ensureInit();
     await this._cacheService.clear(STORES.TRACKS);
     await this._cacheService.clear(STORES.ARTISTS);
@@ -172,7 +189,7 @@ class SpotifyCache {
   /**
    * Get cache statistics (for debugging)
    */
-  async getStats() {
+  async getStats(): Promise<CacheStats> {
     await this._ensureInit();
 
     const trackKeys = await this._cacheService.keys(STORES.TRACKS);
@@ -189,12 +206,12 @@ class SpotifyCache {
 }
 
 // Singleton instance
-let spotifyCacheInstance = null;
+let spotifyCacheInstance: SpotifyCache | null = null;
 
 /**
  * Get the singleton SpotifyCache instance
  */
-export function getSpotifyCache() {
+export function getSpotifyCache(): SpotifyCache {
   if (!spotifyCacheInstance) {
     spotifyCacheInstance = new SpotifyCache();
   }
