@@ -269,8 +269,8 @@ export class IndexedDBAdapter {
       return new Promise((resolve) => {
         const transaction = db.transaction(storeName, 'readonly');
         const store = transaction.objectStore(storeName);
-        let completed = 0;
 
+        // Collect results from individual requests
         for (const key of keys) {
           const request = store.get(key);
 
@@ -278,19 +278,27 @@ export class IndexedDBAdapter {
             if (request.result) {
               results.set(key, request.result as T);
             }
-            completed++;
-            if (completed === keys.length) {
-              resolve(results);
-            }
           };
 
-          request.onerror = () => {
-            completed++;
-            if (completed === keys.length) {
-              resolve(results);
-            }
-          };
+          // Errors on individual requests don't abort transaction
+          // We just won't have that key in results
         }
+
+        // Wait for the entire transaction to complete before resolving
+        // This ensures all data is committed and consistent
+        transaction.oncomplete = () => {
+          resolve(results);
+        };
+
+        transaction.onerror = () => {
+          console.warn('IndexedDBAdapter: getMany transaction failed');
+          resolve(results);
+        };
+
+        transaction.onabort = () => {
+          console.warn('IndexedDBAdapter: getMany transaction aborted');
+          resolve(results);
+        };
       });
     } catch {
       return results;
