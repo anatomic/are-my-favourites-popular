@@ -24,6 +24,24 @@
   fill: var(--text-muted);
 }
 
+/* Axis Labels */
+.axis-label {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  fill: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Legend */
+.legend-label {
+  font-family: var(--font-family);
+  font-size: 11px;
+  fill: var(--text-secondary);
+  dominant-baseline: middle;
+}
+
 /* Line Labels */
 .line-label {
   font-size: var(--font-size-xs);
@@ -31,15 +49,19 @@
   font-weight: var(--font-weight-medium);
 }
 
+.line-label--highlight {
+  fill: var(--text-secondary);
+}
+
 /* Tooltip */
 .tooltip {
   position: fixed;
   background: var(--surface-highlight);
   color: var(--text-primary);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  line-height: 1.6;
+  line-height: 1.4;
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--transition-fast);
@@ -47,19 +69,46 @@
   max-width: 280px;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .tooltip strong {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
-  display: block;
-  margin-bottom: var(--space-xs);
   color: var(--text-primary);
+  margin-bottom: 2px;
 }
 
-.tooltip em {
+.tooltip-artist {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.tooltip-album {
   color: var(--text-muted);
-  font-style: normal;
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  margin-bottom: var(--space-xs);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tooltip-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-xs);
+}
+
+.tooltip-label {
+  color: var(--text-muted);
+}
+
+.tooltip-value {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
 /* Bucket Controls */
