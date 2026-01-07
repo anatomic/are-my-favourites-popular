@@ -25,7 +25,6 @@ transition;
 // Animation timing configuration
 const TRANSITION_DURATION = 600;
 const MAX_STAGGER_DELAY = 1000; // Cap total stagger time for large datasets
-const STAGGER_PER_ITEM = 2; // Milliseconds delay per item for deterministic staggering
 const MIN_RADIUS = 2; // Starting radius for animation
 
 type SVGSelection = Selection<SVGSVGElement, unknown, null, undefined>;
@@ -261,7 +260,7 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
   if (isFirstRender) {
     entering.each(function (this: SVGCircleElement, d: SavedTrack, i: number) {
       // Deterministic stagger based on index, capped at MAX_STAGGER_DELAY
-      const delay = Math.min(i * STAGGER_PER_ITEM, MAX_STAGGER_DELAY);
+      const delay = Math.random() * MAX_STAGGER_DELAY;
       select(this)
         .transition()
         .duration(TRANSITION_DURATION)
@@ -293,7 +292,7 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
  * Escape HTML to prevent XSS vulnerabilities
  */
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
@@ -309,7 +308,9 @@ export function createTooltipContent(
 
   // Escape all user-provided content to prevent XSS
   const trackName = escapeHtml(track.track.name);
-  const artistNames = escapeHtml(track.track.artists.map((a) => a.name).join(", "));
+  const artistNames = escapeHtml(
+    track.track.artists.map((a) => a.name).join(", "),
+  );
   const albumName = escapeHtml(track.track.album.name);
   // Escape color value in case it's manipulated
   const safeColor = escapeHtml(popColor);
