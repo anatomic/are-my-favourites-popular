@@ -177,6 +177,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       <header className="dashboard-header">
         <h1>Are my favourites <span className="text-green">popular?</span></h1>
         <p className="subtitle">Popularity scores reflect current streaming activity, not when you added each track</p>
+        <p className="helper-text">Click any track to play it in the player below</p>
       </header>
 
       {tracks ? (
