@@ -104,6 +104,9 @@ function App() {
     if (tokenData.refresh_token) {
       localStorage.setItem('refresh_token', tokenData.refresh_token);
     }
+    // Clear cached user ID to force re-fetch on next load
+    // This handles the case where someone re-authorizes with a different account
+    localStorage.removeItem('spotify_user_id');
   }
 
   function clearTokens() {
