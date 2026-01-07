@@ -16,15 +16,57 @@
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-sm);
   color: var(--text-muted);
-  margin-bottom: var(--space-md);
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+/* Stats Header with Sort Controls */
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  gap: var(--space-sm);
+}
+
+.stats-sort {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-base);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.stats-sort-btn {
+  background: none;
+  border: none;
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.stats-sort-btn:hover {
+  color: var(--text-primary);
+}
+
+.stats-sort-btn--active {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+}
+
+/* Popularity value styling */
+.stats-popularity {
+  color: var(--text-muted);
 }
 
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-lg);
   max-width: var(--max-width);
   margin: 0 auto;
@@ -48,6 +90,27 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-highlight) transparent;
+}
+
+.stats-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stats-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stats-list::-webkit-scrollbar-thumb {
+  background: var(--surface-highlight);
+  border-radius: 3px;
+}
+
+.stats-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .stats-list--numbered {
@@ -135,6 +198,10 @@
   font-size: var(--font-size-xs);
 }
 
+.stats-value--niche {
+  color: var(--text-muted);
+}
+
 .stats-loading {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
@@ -158,6 +225,32 @@
 
 .stats-link--artist:hover {
   color: var(--spotify-green);
+}
+
+/* Play button for tracks */
+.stats-play-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  transition: color var(--transition-fast);
+}
+
+.stats-play-btn:hover {
+  color: var(--spotify-green);
+}
+
+.stats-play-btn strong {
+  font-weight: var(--font-weight-medium);
 }
 
 /* Yearly Summary */
@@ -225,33 +318,20 @@
   white-space: nowrap;
 }
 
-/* Yearly Summary Indicators */
-.stats-yearly-table td {
-  position: relative;
-}
-
-.indicator {
-  display: block;
+/* Legend indicator samples */
+.indicator-sample {
+  display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin: 6px auto 0;
-  opacity: 0.9;
-}
-
-.indicator--count {
-  box-shadow: 0 0 6px rgba(255, 158, 149, 0.5);
-}
-
-.indicator--pop {
-  box-shadow: 0 0 6px rgba(105, 0, 186, 0.5);
 }
 
 /* Legend for indicators */
 .stats-yearly-legend {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-lg);
+  gap: var(--space-sm) var(--space-lg);
   margin-top: var(--space-md);
   padding-top: var(--space-md);
   border-top: 1px solid var(--border-subtle);

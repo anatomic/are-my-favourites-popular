@@ -414,15 +414,35 @@ export function useSpotifyPlayer(getAccessToken) {
         return true;
       }
 
-      // If 404, device may not be active - retry with delays
-      if (response.status === 404) {
-        console.log('Device not active, retrying with delays...');
-        const success = await retryPlay(trackUri, positionMs, targetDeviceId);
+      // If 404 or 403, device may not be active - transfer playback and retry
+      if (response.status === 404 || response.status === 403) {
+        console.log(`Got ${response.status}, transferring playback to our device...`);
 
-        if (success) {
-          setError(null);
-          setTimeout(fetchExternalPlaybackState, 300);
-          return true;
+        // Transfer playback to our device
+        const transferResponse = await makeApiRequest(
+          'https://api.spotify.com/v1/me/player',
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              device_ids: [targetDeviceId],
+              play: false,
+            }),
+          }
+        );
+
+        if (transferResponse.ok || transferResponse.status === 204) {
+          // Wait for transfer to complete
+          await new Promise(r => setTimeout(r, 500));
+
+          // Retry the play request
+          const success = await retryPlay(trackUri, positionMs, targetDeviceId);
+
+          if (success) {
+            setError(null);
+            setTimeout(fetchExternalPlaybackState, 300);
+            return true;
+          }
         }
       }
 

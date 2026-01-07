@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { select } from 'd3-selection';
-import { rollup, sum, min, max, mean } from 'd3-array';
+import { min, max, mean } from 'd3-array';
 import { scalePow, scaleTime, scaleLinear } from 'd3-scale';
 import { axisBottom, axisLeft } from 'd3-axis';
-import { line, curveBasis } from 'd3-shape';
-import { timeWeek, timeMonth, timeYear } from 'd3-time';
+import { timeYear } from 'd3-time';
 import { interpolateRgb } from 'd3-interpolate';
 import Stats from './Stats';
 import Player from './Player';
@@ -31,13 +30,31 @@ const COLORS = {
 function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
-  const [bucket, setBucket] = useState('year');
   const maxWidth = typeof window !== 'undefined' ? Math.min(window.innerWidth - 80, 1400) : 800;
   const maxHeight = typeof window !== 'undefined' ? Math.min(window.innerHeight - 280, 500) : 400;
 
   // Chart margins
   const margin = { top: 40, right: 30, bottom: 50, left: 60 };
   const chartWidth = maxWidth - margin.left - margin.right;
+
+  // Calculate chart stats
+  const chartStats = useMemo(() => {
+    if (!tracks || tracks.length === 0) return null;
+    const avgPop = mean(tracks, d => d.track.popularity);
+    const maxPop = max(tracks, d => d.track.popularity);
+    const zeroCount = tracks.filter(d => d.track.popularity === 0).length;
+    // Find the track with highest popularity
+    const topTrack = tracks.reduce((best, curr) =>
+      curr.track.popularity > best.track.popularity ? curr : best
+    , tracks[0]);
+    return {
+      total: tracks.length,
+      avgPopularity: Math.round(avgPop),
+      maxPopularity: maxPop,
+      zeroCount,
+      topTrackId: topTrack.track.id,
+    };
+  }, [tracks]);
   const chartHeight = maxHeight - margin.top - margin.bottom;
 
   // Spotify Web Playback SDK
@@ -83,38 +100,15 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .attr('offset', '100%')
       .attr('stop-color', GRADIENT.high);
 
-    // Group tracks by week for moving average (always weekly for finer granularity)
-    const grouped = rollup(
-      sortedTracks,
-      (leaves) => ({
-        total_popularity: sum(leaves, (d) => d.track.popularity),
-        total_tracks: leaves.length,
-      }),
-      (d) => timeWeek(new Date(d.added_at)).toISOString()
-    );
-
-    // Calculate cumulative values for moving average
-    const cumulativePopularity = Array.from(grouped, ([key, values]) => ({
-      key,
-      values,
-    })).sort((a, b) => new Date(a.key) - new Date(b.key));
-
-    let runningSum = 0;
-    let totalTracks = 0;
-    cumulativePopularity.forEach((leaf) => {
-      runningSum += leaf.values.total_popularity;
-      totalTracks += leaf.values.total_tracks;
-      leaf.values.moving_mean = totalTracks && runningSum ? runningSum / totalTracks : runningSum;
-    });
-
     // Scales
     const first = min(sortedTracks, (d) => new Date(d.added_at));
     const last = max(sortedTracks, (d) => new Date(d.added_at));
+    const today = new Date();
     const maxPop = max(sortedTracks, (d) => d.track.popularity);
 
-    const r = scalePow().exponent(1.5).domain([0, 100]).range([3, 14]);
+    const r = scalePow().exponent(1.5).domain([0, 100]).range([3, 18]);
     const x = scaleTime()
-      .domain([first, last])
+      .domain([first, last > today ? last : today])
       .range([margin.left, maxWidth - margin.right])
       .nice();
     const y = scaleLinear()
@@ -128,19 +122,8 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
     };
 
     // Axes
-    const tickInterval = bucket === 'week' ? timeWeek.every(4)
-      : bucket === 'month' ? timeMonth.every(3)
-      : timeYear.every(1);
-    const xAxis = axisBottom(x).ticks(tickInterval);
+    const xAxis = axisBottom(x).ticks(timeYear.every(1));
     const yAxis = axisLeft(y).ticks(5);
-
-    const av = mean(sortedTracks, (d) => d.track.popularity);
-
-    // Moving average line generator
-    const movingAvgLine = line()
-      .curve(curveBasis)
-      .x((d) => x(new Date(d.key)))
-      .y((d) => y(d.values.moving_mean));
 
     // Draw horizontal grid lines
     const gridLines = [20, 40, 60, 80, 100].filter(v => v <= Math.ceil(maxPop / 10) * 10);
@@ -155,27 +138,6 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .attr('y2', d => y(d))
       .attr('stroke', COLORS.grid)
       .attr('stroke-width', 1);
-
-    // Draw moving average line
-    svg
-      .append('path')
-      .attr('d', movingAvgLine(cumulativePopularity))
-      .attr('fill', 'none')
-      .attr('stroke', COLORS.text)
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '6,4')
-      .attr('opacity', 0.5);
-
-    // Draw average line
-    svg
-      .append('line')
-      .attr('x1', margin.left)
-      .attr('x2', maxWidth - margin.right)
-      .attr('y1', y(av))
-      .attr('y2', y(av))
-      .attr('stroke', COLORS.green)
-      .attr('stroke-width', 2)
-      .attr('opacity', 0.8);
 
     // Draw axes
     svg
@@ -200,19 +162,19 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .attr('text-anchor', 'middle')
       .text('Popularity Score');
 
-    // Data points colored by popularity
+    // Data points colored by popularity (top track highlighted in green)
     svg
       .selectAll('circle')
       .data(sortedTracks)
       .enter()
       .append('circle')
-      .attr('r', (d) => r(d.track.popularity))
+      .attr('r', (d) => d.track.popularity === maxPop ? r(d.track.popularity) * 1.2 : r(d.track.popularity))
       .attr('cx', (d) => x(new Date(d.added_at)))
       .attr('cy', (d) => y(d.track.popularity))
-      .attr('fill', (d) => colorScale(d.track.popularity))
-      .attr('opacity', 0.75)
-      .attr('stroke', 'rgba(0,0,0,0.2)')
-      .attr('stroke-width', 0.5)
+      .attr('fill', (d) => d.track.popularity === maxPop ? COLORS.green : colorScale(d.track.popularity))
+      .attr('opacity', (d) => d.track.popularity === maxPop ? 1 : 0.75)
+      .attr('stroke', (d) => d.track.popularity === maxPop ? COLORS.greenLight : 'rgba(0,0,0,0.2)')
+      .attr('stroke-width', (d) => d.track.popularity === maxPop ? 2 : 0.5)
       .style('cursor', 'pointer')
       .on('click', function (event, d) {
         // Play track via SDK or preview
@@ -259,7 +221,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       });
 
     // Legend
-    const legendX = maxWidth - margin.right - 160;
+    const legendX = maxWidth - margin.right - 170;
     const legendY = margin.top;
 
     const legend = svg.append('g')
@@ -270,8 +232,8 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
     legend.append('rect')
       .attr('x', -12)
       .attr('y', -12)
-      .attr('width', 170)
-      .attr('height', 90)
+      .attr('width', 150)
+      .attr('height', 64)
       .attr('fill', 'rgba(18, 18, 18, 0.9)')
       .attr('rx', 8);
 
@@ -293,21 +255,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
       .attr('class', 'legend-label')
       .text('Low popularity');
 
-    // Average line legend
-    legend.append('line')
-      .attr('x1', 0)
-      .attr('x2', 24)
-      .attr('y1', 56)
-      .attr('y2', 56)
-      .attr('stroke', COLORS.green)
-      .attr('stroke-width', 2);
-    legend.append('text')
-      .attr('x', 30)
-      .attr('y', 60)
-      .attr('class', 'legend-label')
-      .text(`Average: ${av.toFixed(0)}`);
-
-  }, [tracks, maxWidth, maxHeight, bucket, margin.left, margin.right, margin.top, margin.bottom, chartWidth, chartHeight, playTrack]);
+  }, [tracks, maxWidth, maxHeight, margin.left, margin.right, margin.top, margin.bottom, chartWidth, chartHeight, playTrack]);
 
   return (
     <div className="dashboard">
@@ -316,32 +264,32 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
         <p className="subtitle">Popularity scores reflect current streaming activity, not when you added each track</p>
       </header>
 
-      <div className="bucket-controls">
-        <span>Group by:</span>
-        <button
-          onClick={() => setBucket('week')}
-          className={`btn btn--bucket ${bucket === 'week' ? 'btn--active' : ''}`}
-        >
-          Week
-        </button>
-        <button
-          onClick={() => setBucket('month')}
-          className={`btn btn--bucket ${bucket === 'month' ? 'btn--active' : ''}`}
-        >
-          Month
-        </button>
-        <button
-          onClick={() => setBucket('year')}
-          className={`btn btn--bucket ${bucket === 'year' ? 'btn--active' : ''}`}
-        >
-          Year
-        </button>
-      </div>
-
       {tracks ? (
-        <div className="chart-wrapper">
-          <svg ref={svgRef} width="100%" height={maxHeight}></svg>
-          <div ref={tooltipRef} className="tooltip"></div>
+        <div className="chart-container">
+          <div className="chart-wrapper">
+            <svg ref={svgRef} width="100%" height={maxHeight}></svg>
+            <div ref={tooltipRef} className="tooltip"></div>
+          </div>
+          {chartStats && (
+            <div className="chart-stats">
+              <div className="chart-stat">
+                <span className="chart-stat-value">{chartStats.total.toLocaleString()}</span>
+                <span className="chart-stat-label">Total Tracks</span>
+              </div>
+              <div className="chart-stat">
+                <span className="chart-stat-value">{chartStats.avgPopularity}</span>
+                <span className="chart-stat-label">Avg Popularity</span>
+              </div>
+              <div className="chart-stat">
+                <span className="chart-stat-value chart-stat-value--highlight">{chartStats.maxPopularity}</span>
+                <span className="chart-stat-label">Highest</span>
+              </div>
+              <div className="chart-stat">
+                <span className="chart-stat-value">{chartStats.zeroCount}</span>
+                <span className="chart-stat-label">Zero Popularity</span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="loading">
@@ -367,14 +315,25 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }) {
         onVolumeChange={player.setVolume}
       />
 
-      {tracks && <Stats tracks={tracks} artistMap={artistMap} />}
+      {tracks && <Stats tracks={tracks} artistMap={artistMap} onPlayTrack={playTrack} />}
 
       <footer className="dashboard-footer">
         <button onClick={onLogout} className="btn btn--secondary">
           Log out
         </button>
         <div className="attribution">
-          Made by{' '}
+          Made with{' '}
+          <svg
+            className="heart-icon"
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="currentColor"
+            aria-label="love"
+          >
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          {' '}by{' '}
           <a
             href="https://twitter.com/anatomic"
             target="_blank"

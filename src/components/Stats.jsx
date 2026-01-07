@@ -1,13 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import './stats.css';
+
+// Convert string to title case
+function toTitleCase(str) {
+  return str.replace(/\b\w/g, char => char.toUpperCase());
+}
 
 // Spotify secondary brand colors for highlights
 const HIGHLIGHT_COLORS = {
   busiest: '#FF9E95',    // Coral - most tracks added
-  popular: '#6900BA',    // Purple - highest avg popularity
+  popular: '#B388FF',    // Light purple - highest avg popularity
+  niche: '#1DB954',      // Spotify Green - lowest avg popularity (most niche)
+  growth: '#F59B23',     // Amber - biggest growth year
 };
 
-function Stats({ tracks, artistMap }) {
+function Stats({ tracks, artistMap, onPlayTrack }) {
 
   // Top 20 most popular songs
   const top20Popular = useMemo(() => {
@@ -16,24 +23,42 @@ function Stats({ tracks, artistMap }) {
       .slice(0, 20);
   }, [tracks]);
 
-  // Top 20 artists by track count
+  // Top 20 most niche songs (lowest popularity)
+  const top20Niche = useMemo(() => {
+    return [...tracks]
+      .sort((a, b) => a.track.popularity - b.track.popularity)
+      .slice(0, 20);
+  }, [tracks]);
+
+  // Sort state for artists and genres
+  const [artistSort, setArtistSort] = useState('count'); // 'count' or 'popularity'
+  const [genreSort, setGenreSort] = useState('count'); // 'count' or 'popularity'
+
+  // Top 20 artists by track count (with avg popularity)
   const topArtists = useMemo(() => {
     const counts = {};
     tracks.forEach(t => {
       const year = new Date(t.added_at).getFullYear();
       t.track.artists.forEach(a => {
         if (!counts[a.id]) {
-          counts[a.id] = { id: a.id, name: a.name, count: 0, years: new Set() };
+          counts[a.id] = { id: a.id, name: a.name, count: 0, totalPop: 0, years: new Set() };
         }
         counts[a.id].count++;
+        counts[a.id].totalPop += t.track.popularity;
         counts[a.id].years.add(year);
       });
     });
     return Object.values(counts)
-      .map(a => ({ ...a, years: [...a.years].sort((x, y) => x - y) }))
-      .sort((a, b) => b.count - a.count)
+      .map(a => ({
+        ...a,
+        avgPopularity: Math.round(a.totalPop / a.count),
+        years: [...a.years].sort((x, y) => x - y),
+      }))
+      .sort((a, b) => artistSort === 'popularity'
+        ? b.avgPopularity - a.avgPopularity
+        : b.count - a.count)
       .slice(0, 20);
-  }, [tracks]);
+  }, [tracks, artistSort]);
 
   // Genre breakdown (only if artistMap is loaded)
   const genreStats = useMemo(() => {
@@ -64,9 +89,11 @@ function Stats({ tracks, artistMap }) {
         avgPopularity: Math.round(data.totalPop / data.count),
         years: [...data.years].sort((x, y) => x - y),
       }))
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => genreSort === 'popularity'
+        ? b.avgPopularity - a.avgPopularity
+        : b.count - a.count)
       .slice(0, 20);
-  }, [tracks, artistMap]);
+  }, [tracks, artistMap, genreSort]);
 
   // Yearly summary - totals and avg popularity by year (ascending)
   const yearlySummary = useMemo(() => {
@@ -88,15 +115,25 @@ function Stats({ tracks, artistMap }) {
       }))
       .sort((a, b) => a.year - b.year);
 
-    // Calculate top 3 by count and by popularity
+    // Calculate rankings for highlights
     const sortedByCount = [...years].sort((a, b) => b.count - a.count);
     const sortedByPop = [...years].sort((a, b) => b.avgPopularity - a.avgPopularity);
+    const sortedByLowPop = [...years].sort((a, b) => a.avgPopularity - b.avgPopularity);
+
+    // Calculate year-over-year growth
+    const withGrowth = years.map((y, i) => ({
+      ...y,
+      growth: i === 0 ? 0 : y.count - years[i - 1].count,
+    }));
+    const sortedByGrowth = [...withGrowth].sort((a, b) => b.growth - a.growth);
 
     // Add ranking info to each year
-    return years.map(y => ({
+    return withGrowth.map(y => ({
       ...y,
       countRank: sortedByCount.findIndex(s => s.year === y.year) + 1,
       popRank: sortedByPop.findIndex(s => s.year === y.year) + 1,
+      lowPopRank: sortedByLowPop.findIndex(s => s.year === y.year) + 1,
+      growthRank: y.growth > 0 ? sortedByGrowth.findIndex(s => s.year === y.year) + 1 : 999,
     }));
   }, [tracks]);
 
@@ -112,14 +149,13 @@ function Stats({ tracks, artistMap }) {
             {top20Popular.map((item, i) => (
               <li key={i}>
                 <span className="stats-track">
-                  <a
-                    href={`https://open.spotify.com/track/${item.track.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="stats-link"
+                  <button
+                    className="stats-play-btn"
+                    onClick={() => onPlayTrack?.(item.track)}
+                    title="Play track"
                   >
                     <strong>{item.track.name}</strong>
-                  </a>
+                  </button>
                   <span className="stats-artist">
                     {item.track.artists.map((a, idx) => (
                       <span key={a.id}>
@@ -142,9 +178,61 @@ function Stats({ tracks, artistMap }) {
           </ol>
         </div>
 
+        {/* Top 20 Most Niche */}
+        <div className="stats-section">
+          <h3>Top 20 Most Niche</h3>
+          <ol className="stats-list stats-list--numbered">
+            {top20Niche.map((item, i) => (
+              <li key={i}>
+                <span className="stats-track">
+                  <button
+                    className="stats-play-btn"
+                    onClick={() => onPlayTrack?.(item.track)}
+                    title="Play track"
+                  >
+                    <strong>{item.track.name}</strong>
+                  </button>
+                  <span className="stats-artist">
+                    {item.track.artists.map((a, idx) => (
+                      <span key={a.id}>
+                        {idx > 0 && ', '}
+                        <a
+                          href={`https://open.spotify.com/artist/${a.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="stats-link stats-link--artist"
+                        >
+                          {a.name}
+                        </a>
+                      </span>
+                    ))}
+                  </span>
+                </span>
+                <span className="stats-value stats-value--niche">{item.track.popularity}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
         {/* Top Artists */}
         <div className="stats-section">
-          <h3>Top 20 Artists</h3>
+          <div className="stats-header">
+            <h3>Top 20 Artists</h3>
+            <div className="stats-sort">
+              <button
+                className={`stats-sort-btn ${artistSort === 'count' ? 'stats-sort-btn--active' : ''}`}
+                onClick={() => setArtistSort('count')}
+              >
+                Tracks
+              </button>
+              <button
+                className={`stats-sort-btn ${artistSort === 'popularity' ? 'stats-sort-btn--active' : ''}`}
+                onClick={() => setArtistSort('popularity')}
+              >
+                Popularity
+              </button>
+            </div>
+          </div>
           <ol className="stats-list stats-list--numbered">
             {topArtists.map((artist) => (
               <li key={artist.id}>
@@ -161,7 +249,9 @@ function Stats({ tracks, artistMap }) {
                     ({artist.years.join(', ')})
                   </span>
                 </span>
-                <span className="stats-value">{artist.count} track{artist.count !== 1 ? 's' : ''}</span>
+                <span className="stats-value">
+                  {artist.count} · <span className="stats-popularity">{artist.avgPopularity}</span>
+                </span>
               </li>
             ))}
           </ol>
@@ -169,19 +259,35 @@ function Stats({ tracks, artistMap }) {
 
         {/* Genre Breakdown */}
         <div className="stats-section">
-          <h3>Top 20 Genres</h3>
+          <div className="stats-header">
+            <h3>Top 20 Genres</h3>
+            <div className="stats-sort">
+              <button
+                className={`stats-sort-btn ${genreSort === 'count' ? 'stats-sort-btn--active' : ''}`}
+                onClick={() => setGenreSort('count')}
+              >
+                Tracks
+              </button>
+              <button
+                className={`stats-sort-btn ${genreSort === 'popularity' ? 'stats-sort-btn--active' : ''}`}
+                onClick={() => setGenreSort('popularity')}
+              >
+                Popularity
+              </button>
+            </div>
+          </div>
           {genreStats.length > 0 ? (
             <ol className="stats-list stats-list--numbered">
               {genreStats.map((g, i) => (
                 <li key={i}>
                   <span className="stats-track">
-                    <strong>{g.genre}</strong>
+                    <strong>{toTitleCase(g.genre)}</strong>
                     <span className="stats-artist">
                       ({g.years.join(', ')})
                     </span>
                   </span>
                   <span className="stats-value">
-                    {g.count} track{g.count !== 1 ? 's' : ''} · avg {g.avgPopularity}
+                    {g.count} · <span className="stats-popularity">{g.avgPopularity}</span>
                   </span>
                 </li>
               ))}
@@ -201,52 +307,76 @@ function Stats({ tracks, artistMap }) {
             <thead>
               <tr>
                 <th className="stats-yearly-label">Year</th>
-                {yearlySummary.map(y => (
-                  <th key={y.year}>{y.year}</th>
-                ))}
+                {yearlySummary.map(y => {
+                  // Collect all highlights for this year
+                  const highlights = [];
+                  if (y.countRank === 1) highlights.push({ color: HIGHLIGHT_COLORS.busiest, title: 'Most tracks added' });
+                  if (y.growthRank === 1 && y.growth > 0) highlights.push({ color: HIGHLIGHT_COLORS.growth, title: `Biggest growth (+${y.growth})` });
+                  if (y.popRank === 1) highlights.push({ color: HIGHLIGHT_COLORS.popular, title: 'Most popular' });
+                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push({ color: HIGHLIGHT_COLORS.niche, title: 'Most niche' });
+
+                  const yearColor = highlights.length > 0 ? highlights[0].color : undefined;
+                  const yearTitle = highlights.map(h => h.title).join(', ');
+
+                  return (
+                    <th
+                      key={y.year}
+                      style={yearColor ? { color: yearColor } : undefined}
+                      title={yearTitle || undefined}
+                    >
+                      {y.year}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td className="stats-yearly-label">Tracks Added</td>
-                {yearlySummary.map(y => (
-                  <td key={y.year} className={y.countRank <= 3 ? 'highlight-count' : ''}>
-                    {y.count}
-                    {y.countRank <= 3 && (
-                      <span
-                        className="indicator indicator--count"
-                        style={{ backgroundColor: HIGHLIGHT_COLORS.busiest }}
-                        title={`#${y.countRank} most tracks added`}
-                      />
-                    )}
-                  </td>
-                ))}
+                {yearlySummary.map(y => {
+                  const highlights = [];
+                  if (y.countRank === 1) highlights.push(HIGHLIGHT_COLORS.busiest);
+                  if (y.growthRank === 1 && y.growth > 0) highlights.push(HIGHLIGHT_COLORS.growth);
+                  const bgColor = highlights[0] ? `${highlights[0]}15` : undefined;
+                  return (
+                    <td key={y.year} style={bgColor ? { backgroundColor: bgColor } : undefined}>
+                      {y.count}
+                    </td>
+                  );
+                })}
               </tr>
               <tr>
                 <td className="stats-yearly-label">Avg Popularity</td>
-                {yearlySummary.map(y => (
-                  <td key={y.year} className={y.popRank <= 3 ? 'highlight-pop' : ''}>
-                    {y.avgPopularity}
-                    {y.popRank <= 3 && (
-                      <span
-                        className="indicator indicator--pop"
-                        style={{ backgroundColor: HIGHLIGHT_COLORS.popular }}
-                        title={`#${y.popRank} highest avg popularity`}
-                      />
-                    )}
-                  </td>
-                ))}
+                {yearlySummary.map(y => {
+                  const highlights = [];
+                  if (y.popRank === 1) highlights.push(HIGHLIGHT_COLORS.popular);
+                  if (y.lowPopRank === 1 && yearlySummary.length > 1) highlights.push(HIGHLIGHT_COLORS.niche);
+                  const bgColor = highlights[0] ? `${highlights[0]}15` : undefined;
+                  return (
+                    <td key={y.year} style={bgColor ? { backgroundColor: bgColor } : undefined}>
+                      {y.avgPopularity}
+                    </td>
+                  );
+                })}
               </tr>
             </tbody>
           </table>
           <div className="stats-yearly-legend">
             <span className="legend-item">
               <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.busiest }} />
-              Most tracks added
+              Most tracks
+            </span>
+            <span className="legend-item">
+              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.growth }} />
+              Biggest growth
             </span>
             <span className="legend-item">
               <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.popular }} />
-              Highest avg popularity
+              Most popular
+            </span>
+            <span className="legend-item">
+              <span className="indicator-sample" style={{ backgroundColor: HIGHLIGHT_COLORS.niche }} />
+              Most niche
             </span>
           </div>
         </div>
