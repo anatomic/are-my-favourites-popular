@@ -378,9 +378,12 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
   }, []);
 
   // Retry play with increasing delays - handles cold start of web player
+  // Note: This function is called AFTER an initial play attempt has already failed.
+  // Each iteration waits first, then retries. The delays [1000, 2000, 3000]ms give
+  // the web player time to become active after a cold start or transfer.
   const retryPlay = useCallback(async (trackUri: string, positionMs: number, targetDeviceId: string): Promise<boolean> => {
     for (let attempt = 0; attempt < RETRY.PLAY_RETRY_DELAYS_MS.length; attempt++) {
-      // Wait before retry
+      // Wait before each retry attempt to allow player to become ready
       await new Promise(r => setTimeout(r, RETRY.PLAY_RETRY_DELAYS_MS[attempt]));
 
       const response = await makeApiRequest(

@@ -22,7 +22,8 @@ export { SpotifyApiError, RateLimitError };
  */
 function calculateBackoffDelay(attempt: number, baseDelay: number = RATE_LIMIT.MIN_RETRY_DELAY_MS): number {
   const exponentialDelay = baseDelay * Math.pow(2, attempt);
-  const jitter = exponentialDelay * RATE_LIMIT.JITTER_FACTOR * Math.random();
+  // Use ± jitter to better distribute retry timing and avoid thundering herd
+  const jitter = exponentialDelay * RATE_LIMIT.JITTER_FACTOR * (Math.random() - 0.5);
   return Math.min(exponentialDelay + jitter, RATE_LIMIT.MAX_RETRY_DELAY_MS);
 }
 
@@ -54,15 +55,35 @@ async function apiRequest<T>(
 
   // Handle rate limiting (429)
   if (response.status === 429) {
-    const retryAfter = parseInt(response.headers.get('Retry-After') || String(RATE_LIMIT.DEFAULT_RETRY_AFTER_S));
+    // Parse Retry-After header - can be seconds (integer) or HTTP-date
+    const retryAfterHeader = response.headers.get('Retry-After');
+    let retryAfterSeconds: number = RATE_LIMIT.DEFAULT_RETRY_AFTER_S;
 
-    if (retryCount >= RATE_LIMIT.MAX_RETRIES) {
-      throw new RateLimitError(retryAfter, 'Rate limit exceeded after max retries');
+    if (retryAfterHeader != null) {
+      const numericValue = Number(retryAfterHeader);
+
+      if (!Number.isNaN(numericValue) && numericValue > 0) {
+        // Header is a number of seconds
+        retryAfterSeconds = numericValue;
+      } else {
+        // Header might be an HTTP-date
+        const retryAfterDateMs = Date.parse(retryAfterHeader);
+        if (!Number.isNaN(retryAfterDateMs)) {
+          const diffMs = retryAfterDateMs - Date.now();
+          if (diffMs > 0) {
+            retryAfterSeconds = Math.ceil(diffMs / 1000);
+          }
+        }
+      }
     }
 
-    log.warn(`Rate limited. Retrying after ${retryAfter}s (attempt ${retryCount + 1}/${RATE_LIMIT.MAX_RETRIES})`);
+    if (retryCount >= RATE_LIMIT.MAX_RETRIES) {
+      throw new RateLimitError(retryAfterSeconds, 'Rate limit exceeded after max retries');
+    }
 
-    await sleep(retryAfter * 1000);
+    log.warn(`Rate limited. Retrying after ${retryAfterSeconds}s (attempt ${retryCount + 1}/${RATE_LIMIT.MAX_RETRIES})`);
+
+    await sleep(retryAfterSeconds * 1000);
     return apiRequest<T>(endpoint, options, retryCount + 1);
   }
 

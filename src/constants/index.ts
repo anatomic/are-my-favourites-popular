@@ -97,6 +97,6 @@ export const RATE_LIMIT = {
   /** Maximum delay between retries (ms) */
   MAX_RETRY_DELAY_MS: 60000,
 
-  /** Jitter factor for retry delays (0-1) */
-  JITTER_FACTOR: 0.1,
+  /** Jitter factor for retry delays - ±25% of delay to prevent thundering herd */
+  JITTER_FACTOR: 0.5,
 } as const;
