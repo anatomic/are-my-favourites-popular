@@ -6,6 +6,9 @@
  */
 
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { loggers } from '../utils/logger';
+
+const log = loggers.app;
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -29,7 +32,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    log.error('ErrorBoundary caught an error:', error, errorInfo);
     this.props.onError?.(error, errorInfo);
   }
 
@@ -82,7 +85,7 @@ export function SectionErrorBoundary({ children, section }: SectionErrorBoundary
         </div>
       }
       onError={(error) => {
-        console.error(`Error in ${section}:`, error);
+        log.error(`Error in ${section}:`, error);
       }}
     >
       {children}

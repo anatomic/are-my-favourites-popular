@@ -8,6 +8,7 @@
  */
 
 import { refreshAccessToken } from '../auth';
+import { AUTH } from '../constants';
 import type { SpotifyTokenResponse } from '../types/spotify';
 
 // Storage keys
@@ -79,7 +80,7 @@ export function getExpiresAt(): number | null {
 /**
  * Check if token is expired or expiring soon
  */
-export function isTokenExpiringSoon(bufferMs: number = 60 * 1000): boolean {
+export function isTokenExpiringSoon(bufferMs: number = AUTH.TOKEN_REFRESH_BUFFER_MS): boolean {
   const expiresAt = getExpiresAt();
   if (!expiresAt) return true;
   return expiresAt < Date.now() + bufferMs;
@@ -183,7 +184,7 @@ export function hasValidAuth(): boolean {
   const refreshToken = getRefreshToken();
 
   // Has valid access token
-  if (accessToken && !isTokenExpiringSoon(5 * 60 * 1000)) {
+  if (accessToken && !isTokenExpiringSoon(AUTH.TOKEN_EXPIRING_SOON_BUFFER_MS)) {
     return true;
   }
 
@@ -209,7 +210,7 @@ export async function initializeAuth(): Promise<boolean> {
   }
 
   // Has valid access token
-  if (accessToken && !isTokenExpiringSoon(5 * 60 * 1000)) {
+  if (accessToken && !isTokenExpiringSoon(AUTH.TOKEN_EXPIRING_SOON_BUFFER_MS)) {
     return true;
   }
 

@@ -6,6 +6,9 @@
  */
 
 import { CACHE_CONFIG } from '../constants';
+import { loggers } from '../../utils/logger';
+
+const log = loggers.cache;
 
 interface StorageError extends Error {
   name: string;
@@ -60,7 +63,7 @@ export class LocalStorageAdapter {
       return JSON.parse(item) as T;
     } catch {
       // Corrupted data - remove it
-      console.warn('LocalStorageAdapter: Failed to parse cached data, clearing entry');
+      log.warn('LocalStorageAdapter: Failed to parse cached data, clearing entry');
       await this.delete(storeName, key);
       return null;
     }
@@ -76,7 +79,7 @@ export class LocalStorageAdapter {
 
       // Check if this would exceed our threshold
       if (serialized.length > this._maxSize) {
-        console.warn('LocalStorageAdapter: Data too large for localStorage');
+        log.warn('LocalStorageAdapter: Data too large for localStorage');
         return false;
       }
 
@@ -86,7 +89,7 @@ export class LocalStorageAdapter {
       // Likely quota exceeded
       const error = e as StorageError;
       if (error.name === 'QuotaExceededError' || error.code === 22) {
-        console.warn('LocalStorageAdapter: Quota exceeded');
+        log.warn('LocalStorageAdapter: Quota exceeded');
       }
       return false;
     }

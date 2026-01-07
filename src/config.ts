@@ -14,7 +14,12 @@ export const SPOTIFY_CLIENT_ID: string =
   import.meta.env.VITE_SPOTIFY_CLIENT_ID || FALLBACK_CLIENT_ID;
 
 // Validate configuration in production
+// Note: This warning always shows in production since it's important
+// to know if the fallback is being used. We import logger dynamically
+// to avoid circular dependency issues.
 if (import.meta.env.PROD && !import.meta.env.VITE_SPOTIFY_CLIENT_ID) {
+  // Use console.warn directly here since this runs at module load time
+  // before the app is fully initialized
   console.warn(
     'VITE_SPOTIFY_CLIENT_ID is not set. Using fallback client ID. ' +
     'Set this environment variable in production.'
