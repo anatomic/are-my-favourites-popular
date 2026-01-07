@@ -8,7 +8,7 @@
  * - Uses ResizeObserver for responsive chart sizing
  */
 
-import { useMemo, useState, useEffect, type RefObject } from 'react';
+import { useMemo, useState, useLayoutEffect, type RefObject } from 'react';
 import { min, max } from 'd3-array';
 import { scalePow, scaleTime, scaleLinear, type ScalePower, type ScaleTime, type ScaleLinear } from 'd3-scale';
 import { interpolateRgb } from 'd3-interpolate';
@@ -53,28 +53,45 @@ const DEFAULT_MARGINS: ChartMargins = {
 
 /**
  * Hook to track container size using ResizeObserver
- * Returns responsive dimensions for the chart
+ * Returns responsive dimensions for the chart, or null until measured
  */
 export function useContainerSize(
   containerRef: RefObject<HTMLElement | null>
-): { width: number; height: number } {
-  const [size, setSize] = useState({ width: 800, height: 400 });
+): { width: number; height: number } | null {
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Debounce resize updates for performance
     let rafId: number;
+
+    // Measurement function - retries on next frame if container not yet laid out
+    const measure = (): void => {
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 0) {
+        const height = Math.min(Math.max(rect.width * 0.42, 300), 525);
+        setSize({ width: rect.width, height });
+      } else {
+        // Container not yet sized (flexbox/grid timing), retry next frame
+        rafId = requestAnimationFrame(measure);
+      }
+    };
+
+    // Measure immediately on mount
+    measure();
+
+    // Set up observer for future resizes
     const observer = new ResizeObserver((entries) => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         const entry = entries[0];
         if (entry) {
           const { width } = entry.contentRect;
-          // Calculate height based on aspect ratio, capped
-          const height = Math.min(Math.max(width * 0.4, 300), 500);
-          setSize({ width, height });
+          if (width > 0) {
+            const height = Math.min(Math.max(width * 0.42, 300), 525);
+            setSize({ width, height });
+          }
         }
       });
     });
@@ -86,6 +103,7 @@ export function useContainerSize(
     };
   }, [containerRef]);
 
+  // Return null until we have real measurements - prevents rendering with wrong scale
   return size;
 }
 
@@ -97,7 +115,8 @@ function calculateDimensions(
   containerHeight: number,
   margins: ChartMargins = DEFAULT_MARGINS
 ): ChartDimensions {
-  const width = Math.min(containerWidth, 1400);
+  // Use actual container width - no cap, let CSS handle max-width if needed
+  const width = containerWidth;
   const height = containerHeight;
 
   return {
@@ -120,18 +139,29 @@ function createColorScale(): (popularity: number) => string {
 }
 
 /**
+ * Calculate responsive radius range based on viewport width
+ */
+function getRadiusRange(width: number): [number, number] {
+  if (width < 500) return [2, 8];
+  if (width < 800) return [2, 12];
+  if (width < 1200) return [3, 15];
+  return [3, 18];
+}
+
+/**
  * Hook for chart configuration and scales
  *
  * @param tracks - Array of saved tracks to visualize
- * @param containerSize - Container dimensions from useContainerSize
- * @returns Chart configuration including dimensions and scales
+ * @param containerSize - Container dimensions from useContainerSize (null until measured)
+ * @returns Chart configuration including dimensions and scales, or null if not ready
  */
 export function useChartConfig(
   tracks: SavedTrack[] | null,
-  containerSize: { width: number; height: number } = { width: 800, height: 400 }
+  containerSize: { width: number; height: number } | null
 ): ChartConfig | null {
   return useMemo(() => {
-    if (!tracks || tracks.length === 0) return null;
+    // Don't create config until we have both tracks and real container measurements
+    if (!tracks || tracks.length === 0 || !containerSize) return null;
 
     // Sort tracks chronologically
     const sortedTracks = [...tracks].sort(
@@ -144,27 +174,29 @@ export function useChartConfig(
 
     // Calculate data extents
     const firstDate = min(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
-    const lastDate = max(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
     const today = new Date();
     const maxPopularity = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
 
-    // Create scales
+    // Create scales - start 1 week before first track, end 6 months after today
+    const xPaddingStart = 7 * 24 * 60 * 60 * 1000; // 1 week in ms
+    const xEnd = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()); // 6 months from now
     const x = scaleTime()
       .domain([
-        firstDate ?? today,
-        (lastDate ?? today) > today ? (lastDate ?? today) : today
+        new Date((firstDate ?? today).getTime() - xPaddingStart),
+        xEnd
       ])
-      .range([margins.left, width - margins.right])
-      .nice();
+      .range([margins.left, width - margins.right]);
 
     const y = scaleLinear()
       .domain([0, Math.ceil(maxPopularity / 10) * 10])
       .range([height - margins.bottom, margins.top]);
 
+    // Responsive radius scaling based on viewport width
+    const radiusRange = getRadiusRange(containerSize.width);
     const radius = scalePow()
       .exponent(1.5)
       .domain([0, 100])
-      .range([3, 18]);
+      .range(radiusRange);
 
     const color = createColorScale();
 
@@ -174,7 +206,7 @@ export function useChartConfig(
       sortedTracks,
       maxPopularity,
     };
-  }, [tracks, containerSize.width, containerSize.height]);
+  }, [tracks, containerSize?.width, containerSize?.height]);
 }
 
 export { DEFAULT_MARGINS };

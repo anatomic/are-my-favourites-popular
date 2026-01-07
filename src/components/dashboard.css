@@ -18,6 +18,7 @@
 /* Chart Wrapper - container styles are in graph.css */
 .chart-wrapper {
   position: relative;
+  width: 100%;
 }
 
 /* Chart Stats */

@@ -11,6 +11,7 @@ import {
   renderGridLines,
   renderAxes,
   renderDataPoints,
+  setupDataPointHandlers,
   renderLegend,
   createTooltipContent,
 } from './chart';
@@ -30,6 +31,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const animatingRef = useRef(false);
 
   // Responsive chart sizing via ResizeObserver
   const containerSize = useContainerSize(chartContainerRef);
@@ -127,19 +129,38 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       renderGradientDef(svg);
     }
 
+    // Set up event delegation on data points container (3 handlers total, not N*3)
+    // This uses event bubbling so we don't need to reattach handlers to each circle
+    setupDataPointHandlers(svg, chartConfig, {
+      onClick: playTrack,
+      onMouseOver: handleMouseOver,
+      onMouseOut: handleMouseOut,
+    });
+
     // Clear and re-render structural elements (axes, grid, legend)
-    // These don't benefit from join() transitions
+    // These appear instantly without animation
     svg.selectAll('.grid-line, .x-axis, .y-axis, .axis-label, .legend').remove();
     renderGridLines(svg, chartConfig);
     renderAxes(svg, chartConfig);
     renderLegend(svg, chartConfig);
 
-    // Data points use join() for smooth enter/update/exit transitions
-    renderDataPoints(svg, chartConfig, {
-      onClick: playTrack,
-      onMouseOver: handleMouseOver,
-      onMouseOut: handleMouseOut,
-    });
+    // Check if this is the first data render (no circles yet)
+    const container = svg.select('g.data-points-container');
+    const isFirstDataRender = container.empty() || container.selectAll('circle').empty();
+
+    if (isFirstDataRender) {
+      // First render: animate from bottom with stagger
+      animatingRef.current = true;
+      renderDataPoints(svg, chartConfig);
+      // Allow updates after animation completes (600ms transition + 2000ms max stagger)
+      setTimeout(() => {
+        animatingRef.current = false;
+      }, 2600);
+    } else if (!animatingRef.current) {
+      // Subsequent renders: smooth transitions (only if not currently animating)
+      renderDataPoints(svg, chartConfig);
+    }
+    // If animating, skip data point update to prevent transition interruption
 
   }, [chartConfig, playTrack, handleMouseOver, handleMouseOut]);
 
@@ -151,9 +172,14 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
       </header>
 
       {tracks ? (
-        <div className="chart-container" ref={chartContainerRef}>
-          <div className="chart-wrapper">
-            <svg ref={svgRef} width={containerSize.width} height={containerSize.height}></svg>
+        <div className="chart-container">
+          <div className="chart-wrapper" ref={chartContainerRef}>
+            <svg
+              ref={svgRef}
+              width={chartConfig?.dimensions.width ?? '100%'}
+              height={chartConfig?.dimensions.height ?? 400}
+              style={{ visibility: chartConfig ? 'visible' : 'hidden' }}
+            ></svg>
             <div ref={tooltipRef} className="tooltip"></div>
           </div>
           {chartStats && (

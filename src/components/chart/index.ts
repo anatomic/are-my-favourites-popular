@@ -9,6 +9,7 @@ export {
   renderGridLines,
   renderAxes,
   renderDataPoints,
+  setupDataPointHandlers,
   renderLegend,
   createTooltipContent,
   type DataPointHandlers,
