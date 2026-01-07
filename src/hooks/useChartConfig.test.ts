@@ -24,7 +24,7 @@ class MockResizeObserver {
   disconnect = vi.fn();
 }
 
-global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
 // Helper to create mock tracks
 function createMockTrack(overrides: Partial<{
@@ -42,13 +42,37 @@ function createMockTrack(overrides: Partial<{
       duration_ms: 180000,
       preview_url: 'https://example.com/preview.mp3',
       uri: 'spotify:track:test',
+      href: 'https://api.spotify.com/v1/tracks/test',
+      explicit: false,
+      track_number: 1,
+      disc_number: 1,
+      is_local: false,
       external_urls: { spotify: 'https://open.spotify.com/track/test' },
-      artists: [{ id: 'artist-1', name: 'Test Artist', external_urls: { spotify: '' } }],
+      artists: [{
+        id: 'artist-1',
+        name: 'Test Artist',
+        uri: 'spotify:artist:artist-1',
+        href: 'https://api.spotify.com/v1/artists/artist-1',
+        external_urls: { spotify: 'https://open.spotify.com/artist/artist-1' },
+      }],
       album: {
         id: 'album-1',
         name: 'Test Album',
+        uri: 'spotify:album:album-1',
+        href: 'https://api.spotify.com/v1/albums/album-1',
+        album_type: 'album',
+        release_date: '2024-01-01',
+        release_date_precision: 'day',
+        total_tracks: 10,
         images: [{ url: 'https://example.com/image.jpg', height: 300, width: 300 }],
-        external_urls: { spotify: '' },
+        artists: [{
+          id: 'artist-1',
+          name: 'Test Artist',
+          uri: 'spotify:artist:artist-1',
+          href: 'https://api.spotify.com/v1/artists/artist-1',
+          external_urls: { spotify: 'https://open.spotify.com/artist/artist-1' },
+        }],
+        external_urls: { spotify: 'https://open.spotify.com/album/album-1' },
       },
     },
   };
@@ -299,21 +323,5 @@ describe('useChartConfig', () => {
       expect(firstConfig).toBe(secondConfig);
     });
 
-    it('returns new config when tracks change', () => {
-      const containerSize = { width: 1000, height: 400 };
-      let tracks = [createMockTrack({ popularity: 50 })];
-
-      const { result, rerender } = renderHook(() =>
-        useChartConfig(tracks, containerSize)
-      );
-
-      const firstConfig = result.current;
-
-      tracks = [createMockTrack({ popularity: 75 })];
-      rerender();
-
-      // Note: This test may fail because we're not properly updating the reference
-      // In a real scenario, useState would be used to trigger re-render
-    });
   });
 });

@@ -15,7 +15,7 @@ vi.mock('./tokenService', () => ({
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.stubGlobal('fetch', mockFetch);
 
 describe('spotifyApi', () => {
   beforeEach(() => {
@@ -263,6 +263,8 @@ describe('spotifyApi', () => {
       });
 
       const promise = fetchUserProfile();
+      // Prevent unhandled rejection warning during timer advancement
+      promise.catch(() => {});
 
       // Run through all retry attempts
       for (let i = 0; i < 5; i++) {
@@ -314,6 +316,8 @@ describe('spotifyApi', () => {
       });
 
       const promise = fetchUserProfile();
+      // Prevent unhandled rejection warning during timer advancement
+      promise.catch(() => {});
 
       // Run through all retry attempts
       for (let i = 0; i < 5; i++) {
