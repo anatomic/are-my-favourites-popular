@@ -8,6 +8,7 @@ const API_BASE = 'https://api.spotify.com/';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [tracks, setTracks] = useState(null);
+  const [artistMap, setArtistMap] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -127,6 +128,10 @@ function App() {
     try {
       const allTracks = await loadCollection(`${API_BASE}v1/me/tracks?offset=0&limit=50`);
       setTracks(allTracks);
+
+      // Fetch artist data for genre information
+      const artists = await loadArtistGenres(allTracks);
+      setArtistMap(artists);
     } catch (err) {
       console.error('Failed to load tracks:', err);
       if (err.status === 401) {
@@ -137,6 +142,39 @@ function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadArtistGenres(tracks) {
+    // Extract unique artist IDs
+    const artistIds = [...new Set(
+      tracks.flatMap(t => t.track.artists.map(a => a.id))
+    )];
+
+    const artistData = new Map();
+
+    // Fetch in batches of 50 (Spotify API limit)
+    for (let i = 0; i < artistIds.length; i += 50) {
+      const batch = artistIds.slice(i, i + 50);
+      const accessToken = await getValidAccessToken();
+      const response = await fetch(
+        `${API_BASE}v1/artists?ids=${batch.join(',')}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        data.artists.forEach(a => {
+          if (a) artistData.set(a.id, a);
+        });
+      }
+    }
+
+    return artistData;
   }
 
   async function loadCollection(url) {
@@ -196,7 +234,7 @@ function App() {
     return <Login />;
   }
 
-  return <Dashboard tracks={tracks} onLogout={handleLogout} />;
+  return <Dashboard tracks={tracks} artistMap={artistMap} onLogout={handleLogout} />;
 }
 
 export default App;

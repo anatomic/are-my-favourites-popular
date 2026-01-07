@@ -6,10 +6,11 @@ import { schemeCategory10 } from 'd3-scale-chromatic';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { line, area, curveBasis } from 'd3-shape';
 import { timeWeek, timeMonth, timeYear } from 'd3-time';
+import Stats from './Stats';
 import './graph.css';
 import './playlists.css';
 
-function Dashboard({ tracks, onLogout }) {
+function Dashboard({ tracks, artistMap, onLogout }) {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
   const [bucket, setBucket] = useState('month');
@@ -248,6 +249,7 @@ function Dashboard({ tracks, onLogout }) {
       ) : (
         <div>Loading Tracks</div>
       )}
+      {tracks && <Stats tracks={tracks} artistMap={artistMap} bucket={bucket} />}
       <button onClick={onLogout} className="btn btn--login">
         Log out
       </button>
