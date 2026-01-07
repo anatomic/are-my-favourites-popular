@@ -1,0 +1,80 @@
+/* Login Page */
+.login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.login-content {
+  max-width: 480px;
+}
+
+.login-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  margin-bottom: var(--space-lg);
+  letter-spacing: -1px;
+}
+
+.login-title .text-green {
+  color: var(--spotify-green);
+}
+
+.login-description {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: var(--space-xl);
+}
+
+.login .btn--login {
+  margin-bottom: var(--space-lg);
+}
+
+.login .btn--login svg {
+  flex-shrink: 0;
+}
+
+.login-disclaimer {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.login-footer {
+  position: absolute;
+  bottom: var(--space-lg);
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.login-footer p {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.login-footer a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login-footer a:hover {
+  color: var(--spotify-green);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .login-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .login-description {
+    font-size: var(--font-size-base);
+  }
+}

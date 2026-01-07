@@ -1,36 +1,193 @@
-h1 {
-  font-family: Helvetica;
-  font-weight: 300;
-  text-align: center;
-  color: #5a5a5a;
+@import '../styles/variables.css';
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
-  font-family: Helvetica;
-  font-weight: 400;
-  color: #999;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--surface-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  min-height: 100vh;
+  background: var(--surface-base);
+}
+
+/* Typography */
+h1 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+p {
+  color: var(--text-secondary);
+}
+
+/* Links */
+a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--spotify-green);
+}
+
+/* Buttons */
 .btn {
-  border-radius: 4px;
-  border-width: 2px;
-  border-style: solid;
-  border-color: #ccc;
-  display: inline-block;
-  padding: 0.5em 0.75em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: var(--radius-pill);
   cursor: pointer;
+  transition: all var(--transition-normal);
 }
 
+.btn:hover {
+  transform: scale(1.04);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Primary Button - Spotify Green */
+.btn--primary,
 .btn--login {
-  border-color: green;
-  background-color: rgba(0, 128, 0, 0.6);
-  color: #fff;
+  background: var(--spotify-green);
+  color: var(--spotify-black);
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--font-size-base);
 }
 
+.btn--primary:hover,
+.btn--login:hover {
+  background: var(--spotify-green-light);
+}
+
+/* Secondary Button - Ghost */
+.btn--secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  padding: var(--space-sm) var(--space-lg);
+}
+
+.btn--secondary:hover {
+  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Text Button */
+.btn--text {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.btn--text:hover {
+  color: var(--text-primary);
+  transform: none;
+}
+
+/* Subtitle */
 .subtitle {
   text-align: center;
-  color: #999;
-  font-size: 14px;
-  margin-top: -10px;
-  margin-bottom: 20px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
+
+/* Container */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: var(--space-md);
+  color: var(--text-secondary);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--surface-highlight);
+  border-top-color: var(--spotify-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error State */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: var(--space-lg);
+  text-align: center;
+  padding: var(--space-lg);
+}
+
+.error h1 {
+  color: var(--text-primary);
+}
+
+.error p {
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.text-green { color: var(--spotify-green); }

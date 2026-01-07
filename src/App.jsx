@@ -215,15 +215,20 @@ function App() {
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="loading">
+        <div className="loading-spinner"></div>
+        <p>Connecting to Spotify...</p>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div>
-        <h1>Error</h1>
+      <div className="error">
+        <h1>Something went wrong</h1>
         <p>{error}</p>
-        <button onClick={() => { setError(null); clearTokens(); }} className="btn btn--login">
+        <button onClick={() => { setError(null); clearTokens(); }} className="btn btn--primary">
           Try Again
         </button>
       </div>

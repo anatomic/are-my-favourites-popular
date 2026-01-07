@@ -1,76 +1,116 @@
+/* Chart Container */
+.chart-container {
+  position: relative;
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin: var(--space-lg) 0;
+}
+
+/* D3 Axis Styling */
 .domain {
   fill: none;
-  stroke: #ededed;
+  stroke: var(--chart-secondary);
 }
 
 .tick line {
-  stroke: #f3f3f3;
+  stroke: var(--surface-highlight);
 }
 
 .tick text {
-  font-family: Helvetica;
-  font-weight: 300;
-  font-size: 12px;
-  fill: #ccc;
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-normal);
+  font-size: var(--font-size-xs);
+  fill: var(--text-muted);
 }
 
+/* Line Labels */
 .line-label {
-  font-size: 10px;
-  fill: #CCC;
+  font-size: var(--font-size-xs);
+  fill: var(--text-muted);
+  font-weight: var(--font-weight-medium);
 }
 
+/* Tooltip */
 .tooltip {
   position: fixed;
-  background: rgba(0, 0, 0, 0.85);
-  color: #fff;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.5;
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--transition-fast);
   z-index: 1000;
-  max-width: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-width: 280px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-subtle);
 }
 
 .tooltip strong {
-  font-size: 14px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-xs);
+  color: var(--text-primary);
 }
 
 .tooltip em {
-  color: #aaa;
+  color: var(--text-muted);
+  font-style: normal;
 }
 
+/* Bucket Controls */
 .bucket-controls {
-  text-align: center;
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .bucket-controls span {
-  margin-right: 10px;
-  color: #666;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin-right: var(--space-sm);
 }
 
 .btn--bucket {
-  margin: 0 4px;
-  padding: 6px 16px;
-  background: #fff;
-  border-color: #ddd;
-  color: #666;
-  font-size: 13px;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
 }
 
 .btn--bucket:hover {
-  border-color: #999;
-  color: #333;
+  background: var(--surface-highlight);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: none;
 }
 
 .btn--bucket.btn--active {
-  background: #74C476;
-  border-color: #74C476;
-  color: #fff;
+  background: var(--spotify-green);
+  border-color: var(--spotify-green);
+  color: var(--spotify-black);
+}
+
+.btn--bucket.btn--active:hover {
+  background: var(--spotify-green-light);
+  border-color: var(--spotify-green-light);
+}
+
+/* Data Point Animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.data-point--playing {
+  animation: pulse 0.8s ease-in-out infinite;
 }

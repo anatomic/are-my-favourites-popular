@@ -1,0 +1,71 @@
+:root {
+  /* Primary - Spotify Brand */
+  --spotify-green: #1DB954;
+  --spotify-green-light: #1ED760;
+  --spotify-black: #191414;
+  --spotify-dark: #121212;
+  --spotify-dark-highlight: #282828;
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B3B3B3;
+  --text-muted: #727272;
+
+  /* Surfaces */
+  --surface-base: #121212;
+  --surface-elevated: #181818;
+  --surface-highlight: #282828;
+  --surface-pressed: #3E3E3E;
+
+  /* Data Visualization */
+  --chart-accent: #1DB954;
+  --chart-secondary: #535353;
+  --chart-area: rgba(29, 185, 84, 0.1);
+  --chart-line: rgba(29, 185, 84, 0.4);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-default: rgba(255, 255, 255, 0.2);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 24px;
+  --font-size-xl: 32px;
+  --font-size-2xl: 48px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 500px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Layout */
+  --max-width: 1400px;
+  --header-height: 64px;
+}
