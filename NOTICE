@@ -1,0 +1,35 @@
+NOTICE
+
+This project uses the Spotify Web API and Spotify Web Playback SDK.
+
+SPOTIFY PLATFORM TERMS
+----------------------
+Use of the Spotify Platform (API, SDK, and related services) is subject to the
+Spotify Developer Terms of Service: https://developer.spotify.com/terms
+
+This open-source license applies only to the source code in this repository.
+It does not grant any rights to the Spotify Platform, Spotify trademarks, or
+Spotify content. Users of this code must:
+
+1. Register their own application at https://developer.spotify.com/dashboard
+2. Obtain their own Spotify API credentials (Client ID)
+3. Agree to and comply with Spotify's Developer Terms of Service
+4. Follow Spotify's Branding Guidelines: https://developer.spotify.com/documentation/design
+
+SPOTIFY TRADEMARKS
+------------------
+Spotify is a registered trademark of Spotify AB. This project is not affiliated
+with, endorsed by, or sponsored by Spotify AB.
+
+All Spotify content (track names, artist names, album artwork, audio playback)
+displayed by this application is the property of Spotify and its licensors.
+
+THIRD-PARTY DEPENDENCIES
+------------------------
+This project includes the following open-source dependencies:
+
+- React (MIT License) - https://github.com/facebook/react
+- Vite (MIT License) - https://github.com/vitejs/vite
+- D3.js (ISC License) - https://github.com/d3/d3
+
+See package.json for the complete list of dependencies and their respective licenses.

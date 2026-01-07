@@ -117,7 +117,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-ISC
+This project is licensed under the [MIT License](LICENSE).
+
+**Important:** This license applies only to the source code in this repository. Use of the Spotify Platform (API, SDK) requires your own Spotify Developer account and agreement to [Spotify's Developer Terms](https://developer.spotify.com/terms). See [NOTICE](NOTICE) for details.
+
+## Disclaimer
+
+This project is not affiliated with, endorsed by, or sponsored by Spotify AB. Spotify is a registered trademark of Spotify AB.
 
 ## Acknowledgements
 
