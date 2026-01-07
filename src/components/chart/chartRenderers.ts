@@ -10,16 +10,24 @@
  * - Uses .join() pattern for cleaner data binding
  */
 
-import { type Selection } from 'd3-selection';
-import 'd3-transition'; // Extends Selection prototype with transition()
+import { type Selection, select } from 'd3-selection';
+import { transition } from 'd3-transition';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { timeYear } from 'd3-time';
+import { easeQuadOut } from 'd3-ease';
 import type { ChartConfig } from '../../hooks/useChartConfig';
 import type { SavedTrack, SpotifyTrack } from '../../types/spotify';
 import { cssColors } from '../../utils/cssVariables';
 
-// Animation duration in milliseconds
-const TRANSITION_DURATION = 400;
+// Ensure d3-transition extends d3-selection
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+transition;
+
+// Animation timing configuration
+const TRANSITION_DURATION = 600;
+const STAGGER_DELAY_PER_POINT = 8; // ms between each point's animation start
+const MAX_STAGGER_DELAY = 2000; // Cap total stagger time for large datasets
+const MIN_RADIUS = 2; // Starting radius for animation
 
 type SVGSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -45,7 +53,7 @@ export function renderGradientDef(svg: SVGSelection): void {
 
 /**
  * Render horizontal grid lines
- * Uses .join() pattern for cleaner data binding
+ * Grid lines fade in after a short delay
  */
 export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
   const { dimensions, scales, maxPopularity } = config;
@@ -56,30 +64,27 @@ export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
     v => v <= Math.ceil(maxPopularity / 10) * 10
   );
 
-  svg.selectAll<SVGLineElement, number>('.grid-line')
+  // Create grid lines (these get cleared and recreated on each render)
+  const lines = svg.selectAll<SVGLineElement, number>('.grid-line')
     .data(gridLines)
-    .join(
-      enter => enter
-        .append('line')
-        .attr('class', 'grid-line')
-        .attr('x1', margins.left)
-        .attr('x2', width - margins.right)
-        .attr('y1', (d: number) => y(d))
-        .attr('y2', (d: number) => y(d))
-        .attr('stroke', cssColors.chartGrid)
-        .attr('stroke-width', 1)
-        .attr('opacity', 0)
-        .call(sel => (sel as any).transition()
-          .duration(TRANSITION_DURATION)
-          .attr('opacity', 1)
-        ),
-      update => update,
-      exit => exit.call(sel => (sel as any).transition()
-        .duration(TRANSITION_DURATION / 2)
-        .attr('opacity', 0)
-        .remove()
-      )
-    );
+    .enter()
+    .append('line')
+    .attr('class', 'grid-line')
+    .attr('x1', margins.left)
+    .attr('x2', width - margins.right)
+    .attr('y1', (d: number) => y(d))
+    .attr('y2', (d: number) => y(d))
+    .attr('stroke', cssColors.chartGrid)
+    .attr('stroke-width', 1)
+    .attr('opacity', 0);
+
+  // Fade in the grid lines
+  lines.each(function(this: SVGLineElement) {
+    select(this)
+      .transition()
+      .duration(TRANSITION_DURATION / 2)
+      .attr('opacity', 1);
+  });
 }
 
 /**
@@ -123,15 +128,25 @@ export interface DataPointHandlers {
 
 /**
  * Render data point circles
- * Uses .join() pattern with staggered enter transitions for visual appeal
+ *
+ * Animation: Each circle starts at Y=0 (bottom) with minimum size and the low
+ * gradient color, then gracefully rises to its target position while growing
+ * to full size and transitioning to its final color. Animation is staggered
+ * from oldest to newest track for a wave-like effect.
  */
 export function renderDataPoints(
   svg: SVGSelection,
   config: ChartConfig,
   handlers: DataPointHandlers
 ): void {
-  const { scales, sortedTracks, maxPopularity } = config;
+  const { dimensions, scales, sortedTracks, maxPopularity } = config;
   const { x, y, radius, color } = scales;
+
+  // Starting Y position (bottom of chart area)
+  const startY = dimensions.height - dimensions.margins.bottom;
+
+  // Starting color (low end of gradient)
+  const startColor = cssColors.chartGradientLow;
 
   // Calculate final attributes for each track
   const getRadius = (d: SavedTrack) =>
@@ -155,53 +170,72 @@ export function renderDataPoints(
   const getStrokeWidth = (d: SavedTrack) =>
     d.track.popularity === maxPopularity ? 2 : 0.5;
 
-  svg.selectAll<SVGCircleElement, SavedTrack>('circle.data-point')
-    .data(sortedTracks, (d: SavedTrack) => d.track.id)
-    .join(
-      enter => enter
-        .append('circle')
-        .attr('class', 'data-point')
-        .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
-        .attr('cy', (d: SavedTrack) => y(d.track.popularity))
-        .attr('r', 0) // Start at 0 for grow animation
-        .attr('fill', getFill)
+  // Bind data with track ID as key for proper enter/update/exit detection
+  const circles = svg.selectAll<SVGCircleElement, SavedTrack>('circle.data-point')
+    .data(sortedTracks, (d: SavedTrack) => d.track.id);
+
+  // Handle exiting elements - animate down and out
+  circles.exit()
+    .each(function(this: SVGCircleElement) {
+      select(this)
+        .transition()
+        .duration(TRANSITION_DURATION / 2)
+        .attr('cy', startY)
+        .attr('r', MIN_RADIUS)
         .attr('opacity', 0)
-        .attr('stroke', getStroke)
-        .attr('stroke-width', getStrokeWidth)
-        .style('cursor', 'pointer')
-        .on('click', function (_event: MouseEvent, d: SavedTrack) {
-          handlers.onClick(d.track);
-        })
-        .on('mouseover', function (event: MouseEvent, d: SavedTrack) {
-          const popColor = color(d.track.popularity);
-          handlers.onMouseOver(event, d, popColor);
-        })
-        .on('mouseout', function (event: MouseEvent, d: SavedTrack) {
-          handlers.onMouseOut(event, d);
-        })
-        .call(sel => (sel as any).transition()
-          .duration(TRANSITION_DURATION)
-          .delay((_d: SavedTrack, i: number) => Math.min(i * 2, 500)) // Staggered entry, capped at 500ms
-          .attr('r', getRadius)
-          .attr('opacity', getOpacity)
-        ),
-      update => update
-        .call(sel => (sel as any).transition()
-          .duration(TRANSITION_DURATION)
-          .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
-          .attr('cy', (d: SavedTrack) => y(d.track.popularity))
-          .attr('r', getRadius)
-          .attr('fill', getFill)
-          .attr('opacity', getOpacity)
-        ),
-      exit => exit
-        .call(sel => (sel as any).transition()
-          .duration(TRANSITION_DURATION / 2)
-          .attr('r', 0)
-          .attr('opacity', 0)
-          .remove()
-        )
-    );
+        .remove();
+    });
+
+  // Handle entering elements - create at bottom, then animate up
+  const entering = circles.enter()
+    .append('circle')
+    .attr('class', 'data-point')
+    .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
+    .attr('cy', startY) // Start at bottom
+    .attr('r', MIN_RADIUS) // Start small
+    .attr('fill', startColor) // Start with low gradient color
+    .attr('opacity', 0.6)
+    .attr('stroke', 'rgba(0,0,0,0.1)')
+    .attr('stroke-width', 0.5)
+    .style('cursor', 'pointer')
+    .on('click', function (_event: MouseEvent, d: SavedTrack) {
+      handlers.onClick(d.track);
+    })
+    .on('mouseover', function (event: MouseEvent, d: SavedTrack) {
+      const popColor = color(d.track.popularity);
+      handlers.onMouseOver(event, d, popColor);
+    })
+    .on('mouseout', function (event: MouseEvent, d: SavedTrack) {
+      handlers.onMouseOut(event, d);
+    });
+
+  // Animate entering elements with staggered delay
+  entering.each(function(this: SVGCircleElement, d: SavedTrack, i: number) {
+    const delay = Math.min(i * STAGGER_DELAY_PER_POINT, MAX_STAGGER_DELAY);
+    select(this)
+      .transition()
+      .duration(TRANSITION_DURATION)
+      .delay(delay)
+      .ease(easeQuadOut)
+      .attr('cy', y(d.track.popularity))
+      .attr('r', getRadius(d))
+      .attr('fill', getFill(d))
+      .attr('opacity', getOpacity(d))
+      .attr('stroke', getStroke(d))
+      .attr('stroke-width', getStrokeWidth(d));
+  });
+
+  // Handle updating elements - animate to new positions
+  circles.each(function(this: SVGCircleElement, d: SavedTrack) {
+    select(this)
+      .transition()
+      .duration(TRANSITION_DURATION)
+      .attr('cx', x(new Date(d.added_at)))
+      .attr('cy', y(d.track.popularity))
+      .attr('r', getRadius(d))
+      .attr('fill', getFill(d))
+      .attr('opacity', getOpacity(d));
+  });
 }
 
 /**
