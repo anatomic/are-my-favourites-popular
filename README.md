@@ -148,7 +148,7 @@ This ensures all committed code meets the project's quality standards.
 ### Prettier Configuration
 
 - Single quotes, trailing commas (ES5), semicolons
-- 80 character line width
+- 100 character line width
 - 2 space indentation
 - Arrow function parentheses always included
 

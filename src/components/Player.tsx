@@ -342,6 +342,12 @@ function Player({
           ref={progressRef}
           className={`player-progress-bar${isDraggingProgress ? ' is-dragging' : ''}`}
           onMouseDown={handleProgressMouseDown}
+          role="slider"
+          tabIndex={0}
+          aria-label="Track progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progressPercent)}
         >
           <div
             className="player-progress-fill"
@@ -369,6 +375,12 @@ function Player({
           ref={volumeRef}
           className={`player-volume-bar${isDraggingVolume ? ' is-dragging' : ''}`}
           onMouseDown={handleVolumeMouseDown}
+          role="slider"
+          tabIndex={0}
+          aria-label="Volume"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(volume * 100)}
         >
           <div className="player-volume-fill" style={{ transform: `scaleX(${volume})` }} />
           <div className="player-volume-handle" style={{ left: `${volume * 100}%` }} />

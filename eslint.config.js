@@ -4,6 +4,7 @@ import tsparser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import prettierConfig from 'eslint-config-prettier';
+import a11y from 'eslint-plugin-jsx-a11y';
 import globals from 'globals';
 
 export default [
@@ -37,6 +38,7 @@ export default [
       '@typescript-eslint': tseslint,
       react,
       'react-hooks': reactHooks,
+      'jsx-a11y': a11y,
     },
     rules: {
       ...tseslint.configs.recommended.rules,
@@ -53,6 +55,7 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      ...a11y.configs.recommended.rules,
     },
     settings: {
       react: {

@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
-npx tsc --noEmit
+npx tsc --noEmit || exit 1
 npx lint-staged
