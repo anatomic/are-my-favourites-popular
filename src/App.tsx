@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import { exchangeCodeForToken, refreshAccessToken } from './auth';
+import { exchangeCodeForToken } from './auth';
 import { getSpotifyCache } from './cache';
-import type { SavedTrack, SpotifyArtist, ArtistMap, SpotifyTokenResponse, SpotifyUserProfile } from './types/spotify';
+import { SPOTIFY_API_BASE } from './config';
+import {
+  saveTokens,
+  clearTokens,
+  getValidAccessToken,
+  initializeAuth,
+  getCachedUserId,
+  cacheUserId,
+} from './services/tokenService';
+import type { SavedTrack, SpotifyArtist, ArtistMap, SpotifyUserProfile } from './types/spotify';
 
-const API_BASE = 'https://api.spotify.com/';
 const spotifyCache = getSpotifyCache();
 
 interface ApiError extends Error {
@@ -53,7 +61,7 @@ function App() {
 
         const tokenData = await exchangeCodeForToken(code, codeVerifier, redirectUri);
 
-        // Store tokens
+        // Store tokens securely (access token in sessionStorage, refresh in localStorage)
         saveTokens(tokenData);
 
         setIsAuthenticated(true);
@@ -61,33 +69,9 @@ function App() {
         return;
       }
 
-      // Check for existing valid token
-      const accessToken = localStorage.getItem('access_token');
-      const expiresAt = localStorage.getItem('expires_at');
-      const refreshToken = localStorage.getItem('refresh_token');
-
-      if (accessToken && expiresAt) {
-        // Check if token is expired or expiring soon (within 5 minutes)
-        const isExpiringSoon = parseInt(expiresAt) < Date.now() + 5 * 60 * 1000;
-
-        if (isExpiringSoon && refreshToken) {
-          // Refresh the token
-          try {
-            const tokenData = await refreshAccessToken(refreshToken);
-            saveTokens(tokenData);
-          } catch {
-            // Refresh failed, need to re-login
-            clearTokens();
-            setLoading(false);
-            return;
-          }
-        } else if (isExpiringSoon) {
-          // Token expired and no refresh token
-          clearTokens();
-          setLoading(false);
-          return;
-        }
-
+      // Try to initialize auth from stored tokens (handles refresh automatically)
+      const authRestored = await initializeAuth();
+      if (authRestored) {
         setIsAuthenticated(true);
         await loadTracks();
         return;
@@ -104,70 +88,16 @@ function App() {
     }
   }
 
-  function saveTokens(tokenData: SpotifyTokenResponse): void {
-    localStorage.setItem('access_token', tokenData.access_token);
-    localStorage.setItem('expires_at', String(Date.now() + tokenData.expires_in * 1000));
-    if (tokenData.refresh_token) {
-      localStorage.setItem('refresh_token', tokenData.refresh_token);
-    }
-    // Clear cached user ID to force re-fetch on next load
-    // This handles the case where someone re-authorizes with a different account
-    localStorage.removeItem('spotify_user_id');
-  }
-
-  function clearTokens(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('expires_at');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('spotify_user_id');
-  }
-
-  async function getValidAccessToken(): Promise<string> {
-    const expiresAt = localStorage.getItem('expires_at');
-    const refreshToken = localStorage.getItem('refresh_token');
-    const accessToken = localStorage.getItem('access_token');
-
-    // If token expires in less than 1 minute, refresh it
-    if (expiresAt && parseInt(expiresAt) < Date.now() + 60 * 1000 && refreshToken) {
-      const tokenData = await refreshAccessToken(refreshToken);
-      saveTokens(tokenData);
-      return tokenData.access_token;
-    }
-
-    // If no access token but we have a refresh token, try to refresh
-    if (!accessToken && refreshToken) {
-      try {
-        const tokenData = await refreshAccessToken(refreshToken);
-        saveTokens(tokenData);
-        return tokenData.access_token;
-      } catch {
-        // Refresh failed - treat as auth failure
-        const error: ApiError = new Error('Session expired. Please log in again.');
-        error.status = 401;
-        throw error;
-      }
-    }
-
-    // No access token and no refresh token - auth failure
-    if (!accessToken) {
-      const error: ApiError = new Error('No access token available. Please log in.');
-      error.status = 401;
-      throw error;
-    }
-
-    return accessToken;
-  }
-
   async function getUserId(): Promise<string> {
     // Check if we have cached user ID
-    const cachedUserId = localStorage.getItem('spotify_user_id');
-    if (cachedUserId) {
-      return cachedUserId;
+    const cachedId = getCachedUserId();
+    if (cachedId) {
+      return cachedId;
     }
 
     // Fetch user ID from Spotify API
     const accessToken = await getValidAccessToken();
-    const response = await fetch(`${API_BASE}v1/me`, {
+    const response = await fetch(`${SPOTIFY_API_BASE}v1/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
@@ -184,7 +114,7 @@ function App() {
     const userId = userData.id;
 
     // Cache the user ID
-    localStorage.setItem('spotify_user_id', userId);
+    cacheUserId(userId);
     return userId;
   }
 
@@ -208,7 +138,7 @@ function App() {
       }
 
       // No valid cache, fetch from API
-      const allTracks = await loadCollection(`${API_BASE}v1/me/tracks?offset=0&limit=50`);
+      const allTracks = await loadCollection(`${SPOTIFY_API_BASE}v1/me/tracks?offset=0&limit=50`);
       setTracks(allTracks);
 
       // Cache the tracks
@@ -251,7 +181,7 @@ function App() {
         const batch = uncachedIds.slice(i, i + 50);
         const accessToken = await getValidAccessToken();
         const response = await fetch(
-          `${API_BASE}v1/artists?ids=${batch.join(',')}`,
+          `${SPOTIFY_API_BASE}v1/artists?ids=${batch.join(',')}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -311,7 +241,7 @@ function App() {
 
   async function handleLogout(): Promise<void> {
     // Clear user's track cache (keep artist cache - shared across users)
-    const userId = localStorage.getItem('spotify_user_id');
+    const userId = getCachedUserId();
     if (userId) {
       try {
         await spotifyCache.invalidateUserCache(userId);
