@@ -7,7 +7,13 @@
 
 import { getCacheService, CacheService } from './CacheService';
 import { CACHE_CONFIG } from './constants';
-import type { SpotifyArtist, SavedTrack, TrackCacheEntry, ArtistCacheEntry, ArtistMap } from '../types/spotify';
+import type {
+  SpotifyArtist,
+  SavedTrack,
+  TrackCacheEntry,
+  ArtistCacheEntry,
+  ArtistMap,
+} from '../types/spotify';
 
 const { STORES, TRACK_CACHE_TTL, ARTIST_CACHE_TTL } = CACHE_CONFIG;
 
@@ -89,7 +95,7 @@ class SpotifyCache {
     const cacheEntry: TrackCacheEntry = {
       userId,
       items: tracks,
-      cachedAt: Date.now()
+      cachedAt: Date.now(),
     };
 
     return this._cacheService.set(STORES.TRACKS, cacheKey, cacheEntry);
@@ -155,15 +161,15 @@ class SpotifyCache {
     await this._ensureInit();
 
     const results = await Promise.all(
-      artists.map(artist =>
+      artists.map((artist) =>
         this._cacheService.set<ArtistCacheEntry>(STORES.ARTISTS, artist.id, {
           artist,
-          cachedAt: Date.now()
+          cachedAt: Date.now(),
         })
       )
     );
 
-    return results.every(r => r);
+    return results.every((r) => r);
   }
 
   /**
@@ -209,7 +215,7 @@ class SpotifyCache {
       trackCacheCount: trackKeys.length,
       artistCacheCount: artistKeys.length,
       trackTTL: TRACK_CACHE_TTL,
-      artistTTL: ARTIST_CACHE_TTL
+      artistTTL: ARTIST_CACHE_TTL,
     };
   }
 }

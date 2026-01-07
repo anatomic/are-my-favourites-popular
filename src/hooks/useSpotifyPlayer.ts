@@ -44,25 +44,28 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
   const mountedRef = useRef<boolean>(true);
 
   // Helper to make API requests with fresh token
-  const makeApiRequest = useCallback(async (url: string, options: RequestInit = {}): Promise<Response> => {
-    try {
-      const token = await getAccessToken();
-      tokenRef.current = token;
+  const makeApiRequest = useCallback(
+    async (url: string, options: RequestInit = {}): Promise<Response> => {
+      try {
+        const token = await getAccessToken();
+        tokenRef.current = token;
 
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      return response;
-    } catch (err) {
-      log.error('API request failed:', err);
-      throw err;
-    }
-  }, [getAccessToken]);
+        return response;
+      } catch (err) {
+        log.error('API request failed:', err);
+        throw err;
+      }
+    },
+    [getAccessToken]
+  );
 
   // Fetch current playback state from any device
   const fetchExternalPlaybackState = useCallback(async (): Promise<void> => {
@@ -202,14 +205,17 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
           // Due to known Spotify bug, SDK device_id may not match API device_id
           // Poll the API to find our device by name and get the correct ID
-          const resolveDeviceId = async (retries = RETRY.DEFAULT_RETRIES, delay = RETRY.BASE_DELAY_MS): Promise<string | null> => {
+          const resolveDeviceId = async (
+            retries = RETRY.DEFAULT_RETRIES,
+            delay = RETRY.BASE_DELAY_MS
+          ): Promise<string | null> => {
             for (let attempt = 0; attempt < retries; attempt++) {
               if (!mountedRef.current) return null;
 
               try {
                 const freshToken = await getAccessToken();
                 const resp = await fetch('https://api.spotify.com/v1/me/player/devices', {
-                  headers: { Authorization: `Bearer ${freshToken}` }
+                  headers: { Authorization: `Bearer ${freshToken}` },
                 });
 
                 if (resp.ok) {
@@ -230,7 +236,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
 
               // Wait before retry with exponential backoff
               if (attempt < retries - 1) {
-                await new Promise(r => setTimeout(r, delay * Math.pow(RETRY.BACKOFF_MULTIPLIER, attempt)));
+                await new Promise((r) =>
+                  setTimeout(r, delay * Math.pow(RETRY.BACKOFF_MULTIPLIER, attempt))
+                );
               }
             }
 
@@ -345,7 +353,9 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
       if (!isTabVisibleRef.current) return;
 
       // Use smart interval based on playback state
-      const interval = isCurrentlyPlaying ? PLAYER.POLL_INTERVAL_PLAYING_MS : PLAYER.POLL_INTERVAL_PAUSED_MS;
+      const interval = isCurrentlyPlaying
+        ? PLAYER.POLL_INTERVAL_PLAYING_MS
+        : PLAYER.POLL_INTERVAL_PAUSED_MS;
       pollIntervalRef.current = window.setInterval(fetchExternalPlaybackState, interval);
     };
 
@@ -381,142 +391,147 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
   // Note: This function is called AFTER an initial play attempt has already failed.
   // Each iteration waits first, then retries. The delays [1000, 2000, 3000]ms give
   // the web player time to become active after a cold start or transfer.
-  const retryPlay = useCallback(async (trackUri: string, positionMs: number, targetDeviceId: string): Promise<boolean> => {
-    for (let attempt = 0; attempt < RETRY.PLAY_RETRY_DELAYS_MS.length; attempt++) {
-      // Wait before each retry attempt to allow player to become ready
-      await new Promise(r => setTimeout(r, RETRY.PLAY_RETRY_DELAYS_MS[attempt]));
+  const retryPlay = useCallback(
+    async (trackUri: string, positionMs: number, targetDeviceId: string): Promise<boolean> => {
+      for (let attempt = 0; attempt < RETRY.PLAY_RETRY_DELAYS_MS.length; attempt++) {
+        // Wait before each retry attempt to allow player to become ready
+        await new Promise((r) => setTimeout(r, RETRY.PLAY_RETRY_DELAYS_MS[attempt]));
 
-      const response = await makeApiRequest(
-        `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            uris: [trackUri],
-            position_ms: positionMs,
-          }),
+        const response = await makeApiRequest(
+          `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uris: [trackUri],
+              position_ms: positionMs,
+            }),
+          }
+        );
+
+        if (response.ok || response.status === 204) {
+          return true;
         }
-      );
-
-      if (response.ok || response.status === 204) {
-        return true;
       }
-    }
 
-    return false;
-  }, [makeApiRequest]);
+      return false;
+    },
+    [makeApiRequest]
+  );
 
   // Play a specific track (always plays on web player, taking over playback)
-  const play = useCallback(async (trackUri: string, positionMs = 0): Promise<boolean> => {
-    // Clear previous errors on attempt
-    setError(null);
+  const play = useCallback(
+    async (trackUri: string, positionMs = 0): Promise<boolean> => {
+      // Clear previous errors on attempt
+      setError(null);
 
-    if (!deviceId) {
-      log.error('Player not ready, deviceId:', deviceId);
-      setError('Player not ready');
-      return false;
-    }
+      if (!deviceId) {
+        log.error('Player not ready, deviceId:', deviceId);
+        setError('Player not ready');
+        return false;
+      }
 
-    try {
-      // Ensure player element is activated (browser autoplay policy)
-      await activatePlayer();
+      try {
+        // Ensure player element is activated (browser autoplay policy)
+        await activatePlayer();
 
-      // Resolve the device ID to use - may need correction due to Spotify bug
-      let targetDeviceId = deviceId;
+        // Resolve the device ID to use - may need correction due to Spotify bug
+        let targetDeviceId = deviceId;
 
-      const devicesResponse = await makeApiRequest('https://api.spotify.com/v1/me/player/devices');
-      if (devicesResponse.ok) {
-        const { devices }: SpotifyDevicesResponse = await devicesResponse.json();
-        const ourDevice = devices.find((d: SpotifyDevice) => d.id === deviceId);
+        const devicesResponse = await makeApiRequest(
+          'https://api.spotify.com/v1/me/player/devices'
+        );
+        if (devicesResponse.ok) {
+          const { devices }: SpotifyDevicesResponse = await devicesResponse.json();
+          const ourDevice = devices.find((d: SpotifyDevice) => d.id === deviceId);
 
-        if (!ourDevice) {
-          // Device not found by ID - try to find by name
-          const byName = devices.find((d: SpotifyDevice) => d.name === PLAYER.NAME);
-          if (byName) {
-            log.log('Device ID corrected via name lookup');
-            targetDeviceId = byName.id;
-            setDeviceId(byName.id);
-            playerDeviceId = byName.id;
-          } else {
-            // Device truly not found - try reconnecting
-            if (playerRef.current) {
-              playerRef.current.disconnect();
-              const reconnected = await playerRef.current.connect();
-              if (!reconnected) {
-                setError('Player connection lost. Please refresh the page.');
-                return false;
+          if (!ourDevice) {
+            // Device not found by ID - try to find by name
+            const byName = devices.find((d: SpotifyDevice) => d.name === PLAYER.NAME);
+            if (byName) {
+              log.log('Device ID corrected via name lookup');
+              targetDeviceId = byName.id;
+              setDeviceId(byName.id);
+              playerDeviceId = byName.id;
+            } else {
+              // Device truly not found - try reconnecting
+              if (playerRef.current) {
+                playerRef.current.disconnect();
+                const reconnected = await playerRef.current.connect();
+                if (!reconnected) {
+                  setError('Player connection lost. Please refresh the page.');
+                  return false;
+                }
+                // Wait for ready event to resolve new device ID
+                await new Promise((resolve) => setTimeout(resolve, RETRY.RECONNECT_DELAY_MS));
+                // Use the newly resolved device ID
+                targetDeviceId = playerDeviceId || deviceId;
               }
-              // Wait for ready event to resolve new device ID
-              await new Promise(resolve => setTimeout(resolve, RETRY.RECONNECT_DELAY_MS));
-              // Use the newly resolved device ID
-              targetDeviceId = playerDeviceId || deviceId;
             }
           }
         }
-      }
 
-      // Try to play the track on the resolved device
-      const response = await makeApiRequest(
-        `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            uris: [trackUri],
-            position_ms: positionMs,
-          }),
-        }
-      );
-
-      if (response.ok || response.status === 204) {
-        setError(null);
-        setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
-        return true;
-      }
-
-      // If 404 or 403, device may not be active - transfer playback and retry
-      if (response.status === 404 || response.status === 403) {
-        log.log(`Got ${response.status}, transferring playback to our device...`);
-
-        // Transfer playback to our device
-        const transferResponse = await makeApiRequest(
-          'https://api.spotify.com/v1/me/player',
+        // Try to play the track on the resolved device
+        const response = await makeApiRequest(
+          `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
           {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uris: [trackUri],
+              position_ms: positionMs,
+            }),
+          }
+        );
+
+        if (response.ok || response.status === 204) {
+          setError(null);
+          setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
+          return true;
+        }
+
+        // If 404 or 403, device may not be active - transfer playback and retry
+        if (response.status === 404 || response.status === 403) {
+          log.log(`Got ${response.status}, transferring playback to our device...`);
+
+          // Transfer playback to our device
+          const transferResponse = await makeApiRequest('https://api.spotify.com/v1/me/player', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               device_ids: [targetDeviceId],
               play: false,
             }),
-          }
-        );
+          });
 
-        if (transferResponse.ok || transferResponse.status === 204) {
-          // Wait for transfer to complete
-          await new Promise(r => setTimeout(r, RETRY.TRANSFER_DELAY_MS));
+          if (transferResponse.ok || transferResponse.status === 204) {
+            // Wait for transfer to complete
+            await new Promise((r) => setTimeout(r, RETRY.TRANSFER_DELAY_MS));
 
-          // Retry the play request
-          const success = await retryPlay(trackUri, positionMs, targetDeviceId);
+            // Retry the play request
+            const success = await retryPlay(trackUri, positionMs, targetDeviceId);
 
-          if (success) {
-            setError(null);
-            setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
-            return true;
+            if (success) {
+              setError(null);
+              setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
+              return true;
+            }
           }
         }
-      }
 
-      // If we get here, playback failed
-      const errorData = await response.json().catch(() => ({}));
-      log.error('Playback failed:', errorData);
-      setError('Failed to start playback');
-      return false;
-    } catch (err) {
-      log.error('Error playing track:', err);
-      setError('Error starting playback');
-      return false;
-    }
-  }, [deviceId, makeApiRequest, fetchExternalPlaybackState, activatePlayer, retryPlay]);
+        // If we get here, playback failed
+        const errorData = await response.json().catch(() => ({}));
+        log.error('Playback failed:', errorData);
+        setError('Failed to start playback');
+        return false;
+      } catch (err) {
+        log.error('Error playing track:', err);
+        setError('Error starting playback');
+        return false;
+      }
+    },
+    [deviceId, makeApiRequest, fetchExternalPlaybackState, activatePlayer, retryPlay]
+  );
 
   // Pause playback (works on any device)
   const pause = useCallback(async (): Promise<void> => {
@@ -559,33 +574,39 @@ export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpot
   }, [externalPlayerState, pause, resume]);
 
   // Seek to position (works on any device)
-  const seek = useCallback(async (positionMs: number): Promise<void> => {
-    setError(null);
+  const seek = useCallback(
+    async (positionMs: number): Promise<void> => {
+      setError(null);
 
-    try {
-      await makeApiRequest(
-        `https://api.spotify.com/v1/me/player/seek?position_ms=${Math.round(positionMs)}`,
-        { method: 'PUT' }
-      );
-      setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
-    } catch (err) {
-      log.error('Error seeking:', err);
-      setError('Failed to seek');
-    }
-  }, [makeApiRequest, fetchExternalPlaybackState]);
+      try {
+        await makeApiRequest(
+          `https://api.spotify.com/v1/me/player/seek?position_ms=${Math.round(positionMs)}`,
+          { method: 'PUT' }
+        );
+        setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
+      } catch (err) {
+        log.error('Error seeking:', err);
+        setError('Failed to seek');
+      }
+    },
+    [makeApiRequest, fetchExternalPlaybackState]
+  );
 
   // Set volume (works on any device)
-  const setVolumeFunc = useCallback(async (volume: number): Promise<void> => {
-    try {
-      const volumePercent = Math.round(volume * 100);
-      await makeApiRequest(
-        `https://api.spotify.com/v1/me/player/volume?volume_percent=${volumePercent}`,
-        { method: 'PUT' }
-      );
-    } catch (err) {
-      log.error('Error setting volume:', err);
-    }
-  }, [makeApiRequest]);
+  const setVolumeFunc = useCallback(
+    async (volume: number): Promise<void> => {
+      try {
+        const volumePercent = Math.round(volume * 100);
+        await makeApiRequest(
+          `https://api.spotify.com/v1/me/player/volume?volume_percent=${volumePercent}`,
+          { method: 'PUT' }
+        );
+      } catch (err) {
+        log.error('Error setting volume:', err);
+      }
+    },
+    [makeApiRequest]
+  );
 
   // Next track (works on any device)
   const nextTrack = useCallback(async (): Promise<void> => {

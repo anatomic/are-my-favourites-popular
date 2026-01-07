@@ -10,7 +10,14 @@
 
 import { useMemo, useState, useLayoutEffect, type RefObject } from 'react';
 import { min, max } from 'd3-array';
-import { scalePow, scaleTime, scaleLinear, type ScalePower, type ScaleTime, type ScaleLinear } from 'd3-scale';
+import {
+  scalePow,
+  scaleTime,
+  scaleLinear,
+  type ScalePower,
+  type ScaleTime,
+  type ScaleLinear,
+} from 'd3-scale';
 import { interpolateRgb } from 'd3-interpolate';
 import type { SavedTrack } from '../types/spotify';
 import { cssColors } from '../utils/cssVariables';
@@ -92,7 +99,9 @@ export function useContainerSize(
         rafId = requestAnimationFrame(measure);
       } else {
         // Fallback: use default dimensions after max retries
-        console.warn('Chart container measurement failed after max retries, using fallback dimensions');
+        console.warn(
+          'Chart container measurement failed after max retries, using fallback dimensions'
+        );
         setSize({ width: 800, height: 400 });
       }
     };
@@ -200,12 +209,13 @@ export function useChartConfig(
     const maxPopularity = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
 
     // Create scales - start 1 week before first track, end 6 months after today
-    const xEnd = new Date(today.getFullYear(), today.getMonth() + X_AXIS_FUTURE_MONTHS, today.getDate());
+    const xEnd = new Date(
+      today.getFullYear(),
+      today.getMonth() + X_AXIS_FUTURE_MONTHS,
+      today.getDate()
+    );
     const x = scaleTime()
-      .domain([
-        new Date((firstDate ?? today).getTime() - ONE_WEEK_MS),
-        xEnd
-      ])
+      .domain([new Date((firstDate ?? today).getTime() - ONE_WEEK_MS), xEnd])
       .range([margins.left, width - margins.right]);
 
     const y = scaleLinear()
@@ -214,10 +224,7 @@ export function useChartConfig(
 
     // Responsive radius scaling based on viewport width
     const radiusRange = getRadiusRange(containerSize.width);
-    const radius = scalePow()
-      .exponent(1.5)
-      .domain([0, 100])
-      .range(radiusRange);
+    const radius = scalePow().exponent(1.5).domain([0, 100]).range(radiusRange);
 
     const color = createColorScale();
 
@@ -227,7 +234,7 @@ export function useChartConfig(
       sortedTracks,
       maxPopularity,
     };
-  }, [tracks, containerSize?.width, containerSize?.height]);
+  }, [tracks, containerSize]);
 }
 
 export { DEFAULT_MARGINS };

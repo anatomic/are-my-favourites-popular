@@ -143,9 +143,7 @@ describe('spotifyApi', () => {
     it('throws error if more than 50 artists requested', async () => {
       const ids = Array.from({ length: 51 }, (_, i) => `artist${i}`);
 
-      await expect(fetchArtists(ids)).rejects.toThrow(
-        'Cannot fetch more than 50 artists at once'
-      );
+      await expect(fetchArtists(ids)).rejects.toThrow('Cannot fetch more than 50 artists at once');
     });
 
     it('filters out null artists from response', async () => {

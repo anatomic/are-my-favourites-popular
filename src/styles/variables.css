@@ -1,37 +1,37 @@
 :root {
   /* Primary - Spotify Brand */
-  --spotify-green: #1DB954;
-  --spotify-green-light: #1ED760;
+  --spotify-green: #1db954;
+  --spotify-green-light: #1ed760;
   --spotify-black: #191414;
   --spotify-dark: #121212;
   --spotify-dark-highlight: #282828;
 
   /* Text */
-  --text-primary: #FFFFFF;
-  --text-secondary: #B3B3B3;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
   --text-muted: #727272;
 
   /* Surfaces */
   --surface-base: #121212;
   --surface-elevated: #181818;
   --surface-highlight: #282828;
-  --surface-pressed: #3E3E3E;
+  --surface-pressed: #3e3e3e;
 
   /* Data Visualization */
-  --chart-accent: #1DB954;
+  --chart-accent: #1db954;
   --chart-secondary: #535353;
   --chart-area: rgba(29, 185, 84, 0.1);
   --chart-line: rgba(29, 185, 84, 0.4);
 
   /* Data Viz - Gradient endpoints */
-  --chart-gradient-low: #6900BA;
-  --chart-gradient-high: #FF9E95;
+  --chart-gradient-low: #6900ba;
+  --chart-gradient-high: #ff9e95;
 
   /* Data Viz - Highlight colors */
-  --highlight-busiest: #FF9E95;
-  --highlight-popular: #B388FF;
-  --highlight-niche: #1DB954;
-  --highlight-growth: #F59B23;
+  --highlight-busiest: #ff9e95;
+  --highlight-popular: #b388ff;
+  --highlight-niche: #1db954;
+  --highlight-growth: #f59b23;
 
   /* Semantic colors */
   --error-color: #ff6b6b;

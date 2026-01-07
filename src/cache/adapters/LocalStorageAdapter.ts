@@ -114,9 +114,7 @@ export class LocalStorageAdapter {
   async clear(storeName: string | null = null): Promise<boolean> {
     try {
       const keysToRemove: string[] = [];
-      const prefix = storeName
-        ? `${this._prefix}${storeName}_`
-        : this._prefix;
+      const prefix = storeName ? `${this._prefix}${storeName}_` : this._prefix;
 
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i);
@@ -125,7 +123,7 @@ export class LocalStorageAdapter {
         }
       }
 
-      keysToRemove.forEach(key => window.localStorage.removeItem(key));
+      keysToRemove.forEach((key) => window.localStorage.removeItem(key));
       return true;
     } catch {
       return false;

@@ -169,7 +169,9 @@ describe('CacheService', () => {
       const result = await cacheService.set('store', 'key', { data: 'test' });
 
       expect(result).toBe(true);
-      expect(mockIndexedDBInstance.set).toHaveBeenCalledWith('store', 'key', { data: 'test' });
+      expect(mockIndexedDBInstance.set).toHaveBeenCalledWith('store', 'key', {
+        data: 'test',
+      });
     });
 
     it('tries fallback when primary fails', async () => {

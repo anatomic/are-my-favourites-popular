@@ -27,12 +27,14 @@ class MockResizeObserver {
 vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
 // Helper to create mock tracks
-function createMockTrack(overrides: Partial<{
-  id: string;
-  name: string;
-  popularity: number;
-  added_at: string;
-}>): SavedTrack {
+function createMockTrack(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    popularity: number;
+    added_at: string;
+  }>
+): SavedTrack {
   return {
     added_at: overrides.added_at ?? '2024-01-15T10:00:00Z',
     track: {
@@ -48,13 +50,17 @@ function createMockTrack(overrides: Partial<{
       disc_number: 1,
       is_local: false,
       external_urls: { spotify: 'https://open.spotify.com/track/test' },
-      artists: [{
-        id: 'artist-1',
-        name: 'Test Artist',
-        uri: 'spotify:artist:artist-1',
-        href: 'https://api.spotify.com/v1/artists/artist-1',
-        external_urls: { spotify: 'https://open.spotify.com/artist/artist-1' },
-      }],
+      artists: [
+        {
+          id: 'artist-1',
+          name: 'Test Artist',
+          uri: 'spotify:artist:artist-1',
+          href: 'https://api.spotify.com/v1/artists/artist-1',
+          external_urls: {
+            spotify: 'https://open.spotify.com/artist/artist-1',
+          },
+        },
+      ],
       album: {
         id: 'album-1',
         name: 'Test Album',
@@ -65,13 +71,17 @@ function createMockTrack(overrides: Partial<{
         release_date_precision: 'day',
         total_tracks: 10,
         images: [{ url: 'https://example.com/image.jpg', height: 300, width: 300 }],
-        artists: [{
-          id: 'artist-1',
-          name: 'Test Artist',
-          uri: 'spotify:artist:artist-1',
-          href: 'https://api.spotify.com/v1/artists/artist-1',
-          external_urls: { spotify: 'https://open.spotify.com/artist/artist-1' },
-        }],
+        artists: [
+          {
+            id: 'artist-1',
+            name: 'Test Artist',
+            uri: 'spotify:artist:artist-1',
+            href: 'https://api.spotify.com/v1/artists/artist-1',
+            external_urls: {
+              spotify: 'https://open.spotify.com/artist/artist-1',
+            },
+          },
+        ],
         external_urls: { spotify: 'https://open.spotify.com/album/album-1' },
       },
     },
@@ -275,33 +285,25 @@ describe('useChartConfig', () => {
     const tracks = [createMockTrack({ popularity: 100 })];
 
     it('uses smaller radius range for narrow viewports (< 500px)', () => {
-      const { result } = renderHook(() =>
-        useChartConfig(tracks, { width: 400, height: 300 })
-      );
+      const { result } = renderHook(() => useChartConfig(tracks, { width: 400, height: 300 }));
       const maxRadius = result.current?.scales.radius(100);
       expect(maxRadius).toBe(8);
     });
 
     it('uses medium radius range for medium viewports (500-800px)', () => {
-      const { result } = renderHook(() =>
-        useChartConfig(tracks, { width: 600, height: 300 })
-      );
+      const { result } = renderHook(() => useChartConfig(tracks, { width: 600, height: 300 }));
       const maxRadius = result.current?.scales.radius(100);
       expect(maxRadius).toBe(12);
     });
 
     it('uses larger radius range for wide viewports (800-1200px)', () => {
-      const { result } = renderHook(() =>
-        useChartConfig(tracks, { width: 1000, height: 400 })
-      );
+      const { result } = renderHook(() => useChartConfig(tracks, { width: 1000, height: 400 }));
       const maxRadius = result.current?.scales.radius(100);
       expect(maxRadius).toBe(15);
     });
 
     it('uses largest radius range for very wide viewports (>= 1200px)', () => {
-      const { result } = renderHook(() =>
-        useChartConfig(tracks, { width: 1400, height: 500 })
-      );
+      const { result } = renderHook(() => useChartConfig(tracks, { width: 1400, height: 500 }));
       const maxRadius = result.current?.scales.radius(100);
       expect(maxRadius).toBe(18);
     });
@@ -312,9 +314,7 @@ describe('useChartConfig', () => {
       const tracks = [createMockTrack({})];
       const containerSize = { width: 1000, height: 400 };
 
-      const { result, rerender } = renderHook(() =>
-        useChartConfig(tracks, containerSize)
-      );
+      const { result, rerender } = renderHook(() => useChartConfig(tracks, containerSize));
 
       const firstConfig = result.current;
       rerender();
@@ -322,6 +322,5 @@ describe('useChartConfig', () => {
 
       expect(firstConfig).toBe(secondConfig);
     });
-
   });
 });

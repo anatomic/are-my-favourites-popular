@@ -53,10 +53,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <p className="error-boundary__message">
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
-            <button
-              onClick={this.handleRetry}
-              className="btn btn--primary"
-            >
+            <button onClick={this.handleRetry} className="btn btn--primary">
               Try Again
             </button>
           </div>

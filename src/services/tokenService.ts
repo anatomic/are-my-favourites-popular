@@ -30,10 +30,7 @@ let refreshPromise: Promise<SpotifyTokenResponse> | null = null;
 export function saveTokens(tokenData: SpotifyTokenResponse): void {
   // Access token in sessionStorage - cleared when tab closes
   sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokenData.access_token);
-  sessionStorage.setItem(
-    STORAGE_KEYS.EXPIRES_AT,
-    String(Date.now() + tokenData.expires_in * 1000)
-  );
+  sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, String(Date.now() + tokenData.expires_in * 1000));
 
   // Refresh token in localStorage - persists across sessions
   if (tokenData.refresh_token) {
@@ -156,10 +153,12 @@ export async function getValidAccessToken(): Promise<string> {
     try {
       const tokenData = await refreshTokenWithMutex();
       return tokenData.access_token;
-    } catch (error) {
+    } catch {
       // Refresh failed - clear tokens and throw auth error
       clearTokens();
-      const authError = new Error('Session expired. Please log in again.') as Error & { status?: number };
+      const authError = new Error('Session expired. Please log in again.') as Error & {
+        status?: number;
+      };
       authError.status = 401;
       throw authError;
     }
@@ -167,7 +166,9 @@ export async function getValidAccessToken(): Promise<string> {
 
   // No access token and no refresh token
   if (!accessToken) {
-    const authError = new Error('No access token available. Please log in.') as Error & { status?: number };
+    const authError = new Error('No access token available. Please log in.') as Error & {
+      status?: number;
+    };
     authError.status = 401;
     throw authError;
   }

@@ -19,8 +19,8 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
 
 ## Screenshots
 
-| Chart View | Library Stats |
-|------------|---------------|
+| Chart View                                                  | Library Stats                            |
+| ----------------------------------------------------------- | ---------------------------------------- |
 | Interactive scatter plot showing track popularity over time | Top tracks, artists, genres with sorting |
 
 ## Getting Started
@@ -34,12 +34,14 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/anatomic/are-my-favourites-popular.git
    cd are-my-favourites-popular
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -49,6 +51,7 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
    Create your app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and add `http://localhost:3000` as a Redirect URI.
 
    Set your Client ID via environment variable:
+
    ```bash
    CLIENT_ID=your_client_id npm run dev
    ```
@@ -56,6 +59,7 @@ A React app that visualizes the popularity of your Spotify saved tracks over tim
    Or update `vite.config.js` directly.
 
 4. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -110,6 +114,43 @@ src/
 - **D3.js** — Data visualization
 - **Spotify Web API** — Track and artist data
 - **Spotify Web Playback SDK** — In-browser playback
+
+## Code Quality
+
+This project uses ESLint and Prettier to maintain code quality and consistent formatting.
+
+### Linting & Formatting Commands
+
+```bash
+npm run lint          # Check for linting issues
+npm run lint:fix      # Fix linting issues automatically
+npm run format        # Format all files with Prettier
+npm run format:check  # Check formatting without changes
+npm run check         # Run all checks (lint + format + typecheck)
+```
+
+### Pre-commit Hooks
+
+The project uses [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/lint-staged/lint-staged) to automatically lint and format staged files before each commit:
+
+- **JS/TS files** — ESLint fix + Prettier format
+- **JSON/CSS/MD files** — Prettier format
+
+This ensures all committed code meets the project's quality standards.
+
+### ESLint Configuration
+
+- TypeScript-aware linting with `@typescript-eslint`
+- React and React Hooks rules
+- Prettier integration (formatting rules disabled in ESLint)
+- Unused variable patterns: prefix with `_` to ignore (e.g., `_unusedVar`)
+
+### Prettier Configuration
+
+- Single quotes, trailing commas (ES5), semicolons
+- 80 character line width
+- 2 space indentation
+- Arrow function parentheses always included
 
 ## Contributing
 

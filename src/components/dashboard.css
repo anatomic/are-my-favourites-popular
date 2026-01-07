@@ -44,11 +44,7 @@
   width: 12px;
   height: 40px;
   border-radius: 2px;
-  background: linear-gradient(
-    to top,
-    var(--chart-gradient-low),
-    var(--chart-gradient-high)
-  );
+  background: linear-gradient(to top, var(--chart-gradient-low), var(--chart-gradient-high));
 }
 
 .chart-legend-labels {

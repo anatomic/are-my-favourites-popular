@@ -137,7 +137,7 @@ export class CacheService {
       await Promise.all([
         this._indexedDB.clear(storeName).catch(() => {}),
         this._localStorage.clear(storeName).catch(() => {}),
-        this._memory.clear(storeName)
+        this._memory.clear(storeName),
       ]);
       return true;
     } catch {
@@ -236,7 +236,7 @@ export class CacheService {
           result.set(key, value);
         }
         // Filter out found keys
-        remainingKeys = remainingKeys.filter(key => !localResult.has(key));
+        remainingKeys = remainingKeys.filter((key) => !localResult.has(key));
       } catch {
         // Continue to memory
       }

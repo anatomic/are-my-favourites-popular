@@ -28,10 +28,18 @@ describe('tokenService', () => {
   // Create mock storage objects
   const createStorageMock = (data: Record<string, string>) => ({
     getItem: vi.fn((key: string) => data[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => { data[key] = value; }),
-    removeItem: vi.fn((key: string) => { delete data[key]; }),
-    clear: vi.fn(() => { Object.keys(data).forEach(k => delete data[k]); }),
-    get length() { return Object.keys(data).length; },
+    setItem: vi.fn((key: string, value: string) => {
+      data[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete data[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(data).forEach((k) => delete data[k]);
+    }),
+    get length() {
+      return Object.keys(data).length;
+    },
     key: vi.fn((i: number) => Object.keys(data)[i] ?? null),
   });
 
@@ -259,10 +267,7 @@ describe('tokenService', () => {
       );
 
       // Call getValidAccessToken concurrently
-      const [token1, token2] = await Promise.all([
-        getValidAccessToken(),
-        getValidAccessToken(),
-      ]);
+      const [token1, token2] = await Promise.all([getValidAccessToken(), getValidAccessToken()]);
 
       // Both should get the same new token
       expect(token1).toBe('new-token');
