@@ -180,7 +180,7 @@ function Dashboard({ tracks, onLogout }) {
             <strong>${d.track.name}</strong><br/>
             ${d.track.artists.map(a => a.name).join(', ')}<br/>
             <em>${d.track.album.name}</em><br/>
-            Popularity: ${d.track.popularity}<br/>
+            Current popularity: ${d.track.popularity}<br/>
             Added: ${addedDate}
           `;
           tooltip.style.opacity = '1';
@@ -212,12 +212,13 @@ function Dashboard({ tracks, onLogout }) {
       .attr('dx', 4)
       .attr('dy', -4)
       .attr('class', 'line-label')
-      .text(`Average popularity: ${av.toFixed(2)}`);
+      .text(`Average current popularity: ${av.toFixed(2)}`);
   }, [tracks, maxWidth, maxHeight, bucket]);
 
   return (
     <div>
       <h1>Are my favourites popular?</h1>
+      <p className="subtitle">Popularity scores reflect current streaming activity, not when you added each track</p>
       <div className="bucket-controls">
         <span>Group by: </span>
         <button

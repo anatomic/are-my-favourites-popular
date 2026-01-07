@@ -26,3 +26,11 @@ html {
   background-color: rgba(0, 128, 0, 0.6);
   color: #fff;
 }
+
+.subtitle {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  margin-top: -10px;
+  margin-bottom: 20px;
+}
