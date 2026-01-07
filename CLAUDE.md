@@ -41,13 +41,29 @@ npm run test:run # Run tests once
    npm test -- --run
    ```
 
-4. **Run the build** to catch all errors (includes lint + format + TypeScript):
+4. **Run the build** to catch TypeScript errors:
 
    ```bash
    npm run build
    ```
 
-The build runs `lint`, `format:check`, and `tsc` (TypeScript compiler) before Vite bundling. Common issues to watch for:
+5. **Code review before pushing** - Use a sub-agent to review changes:
+
+   Before pushing to GitHub, spawn a `code-reviewer` agent to catch issues early:
+
+   ```
+   Use the Task tool with subagent_type="feature-dev:code-reviewer" to review the staged changes
+   ```
+
+   The reviewer will check for:
+   - Code quality and best practices
+   - Potential bugs or logic errors
+   - Security vulnerabilities
+   - Adherence to project conventions
+
+   This catches PR review feedback earlier, reducing the push → review → fix cycle.
+
+Common issues to watch for:
 
 - Missing type properties in mock objects
 - Unused variables (TypeScript strict mode)
