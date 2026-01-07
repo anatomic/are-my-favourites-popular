@@ -97,11 +97,7 @@ describe('auth', () => {
         json: () => Promise.resolve(mockTokenResponse),
       });
 
-      await exchangeCodeForToken(
-        'auth-code',
-        'code-verifier',
-        'http://localhost:3000/callback'
-      );
+      await exchangeCodeForToken('auth-code', 'code-verifier', 'http://localhost:3000/callback');
 
       const call = mockFetch.mock.calls[0];
       const body = call[1].body as URLSearchParams;
@@ -124,11 +120,7 @@ describe('auth', () => {
       });
 
       await expect(
-        exchangeCodeForToken(
-          'expired-code',
-          'verifier',
-          'http://localhost:3000'
-        )
+        exchangeCodeForToken('expired-code', 'verifier', 'http://localhost:3000')
       ).rejects.toThrow('Authorization code expired');
     });
 
@@ -189,9 +181,7 @@ describe('auth', () => {
           }),
       });
 
-      await expect(refreshAccessToken('revoked-token')).rejects.toThrow(
-        'Refresh token revoked'
-      );
+      await expect(refreshAccessToken('revoked-token')).rejects.toThrow('Refresh token revoked');
     });
 
     it('throws generic error when no description provided', async () => {
@@ -200,9 +190,7 @@ describe('auth', () => {
         json: () => Promise.resolve({ error: 'server_error' }),
       });
 
-      await expect(refreshAccessToken('token')).rejects.toThrow(
-        'Token refresh failed'
-      );
+      await expect(refreshAccessToken('token')).rejects.toThrow('Token refresh failed');
     });
   });
 });

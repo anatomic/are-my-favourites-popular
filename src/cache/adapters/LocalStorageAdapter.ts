@@ -63,9 +63,7 @@ export class LocalStorageAdapter {
       return JSON.parse(item) as T;
     } catch {
       // Corrupted data - remove it
-      log.warn(
-        'LocalStorageAdapter: Failed to parse cached data, clearing entry'
-      );
+      log.warn('LocalStorageAdapter: Failed to parse cached data, clearing entry');
       await this.delete(storeName, key);
       return null;
     }

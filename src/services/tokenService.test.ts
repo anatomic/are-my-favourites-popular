@@ -230,9 +230,7 @@ describe('tokenService', () => {
       sessionData['spotify_expires_at'] = String(Date.now() - 1000);
       localData['spotify_refresh_token'] = 'invalid-refresh';
 
-      vi.mocked(refreshAccessToken).mockRejectedValueOnce(
-        new Error('Invalid grant')
-      );
+      vi.mocked(refreshAccessToken).mockRejectedValueOnce(new Error('Invalid grant'));
 
       await expect(getValidAccessToken()).rejects.toMatchObject({
         message: 'Session expired. Please log in again.',
@@ -269,10 +267,7 @@ describe('tokenService', () => {
       );
 
       // Call getValidAccessToken concurrently
-      const [token1, token2] = await Promise.all([
-        getValidAccessToken(),
-        getValidAccessToken(),
-      ]);
+      const [token1, token2] = await Promise.all([getValidAccessToken(), getValidAccessToken()]);
 
       // Both should get the same new token
       expect(token1).toBe('new-token');

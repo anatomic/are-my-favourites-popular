@@ -9,14 +9,7 @@ import globals from 'globals';
 export default [
   // Global ignores - must be separate object without 'files'
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'coverage/**',
-      'eslint.config.js',
-      'vite.config.js',
-      'vitest.config.ts',
-    ],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
   },
   js.configs.recommended,
   {
@@ -51,6 +44,7 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -63,6 +57,15 @@ export default [
     settings: {
       react: {
         version: 'detect',
+      },
+    },
+  },
+  // Config files need Node globals
+  {
+    files: ['*.config.js', '*.config.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
       },
     },
   },

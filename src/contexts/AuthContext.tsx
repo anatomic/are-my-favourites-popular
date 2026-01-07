@@ -5,14 +5,7 @@
  * Handles OAuth callback, token management, and session restoration.
  */
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { exchangeCodeForToken } from '../auth';
 import { loggers } from '../utils/logger';
 import {
@@ -102,11 +95,7 @@ export function AuthProvider({ children, onLogout }: AuthProviderProps) {
           window.history.replaceState(null, '', window.location.pathname);
           sessionStorage.removeItem('code_verifier');
 
-          const tokenData = await exchangeCodeForToken(
-            code,
-            codeVerifier,
-            redirectUri
-          );
+          const tokenData = await exchangeCodeForToken(code, codeVerifier, redirectUri);
           saveTokens(tokenData);
 
           // Fetch and cache user ID

@@ -42,14 +42,8 @@ export function renderGradientDef(svg: SVGSelection): void {
     .attr('x2', '0%')
     .attr('y2', '0%');
 
-  gradient
-    .append('stop')
-    .attr('offset', '0%')
-    .attr('stop-color', cssColors.chartGradientLow);
-  gradient
-    .append('stop')
-    .attr('offset', '100%')
-    .attr('stop-color', cssColors.chartGradientHigh);
+  gradient.append('stop').attr('offset', '0%').attr('stop-color', cssColors.chartGradientLow);
+  gradient.append('stop').attr('offset', '100%').attr('stop-color', cssColors.chartGradientHigh);
 }
 
 /**
@@ -60,9 +54,7 @@ export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
   const { margins, width } = dimensions;
   const { y } = scales;
 
-  const gridLines = [20, 40, 60, 80, 100].filter(
-    (v) => v <= Math.ceil(maxPopularity / 10) * 10
-  );
+  const gridLines = [20, 40, 60, 80, 100].filter((v) => v <= Math.ceil(maxPopularity / 10) * 10);
 
   svg
     .selectAll<SVGLineElement, number>('.grid-line')
@@ -203,16 +195,12 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
       ? cssColors.spotifyGreen
       : scales.color(d.track.popularity);
 
-  const getOpacity = (d: SavedTrack) =>
-    d.track.popularity === maxPopularity ? 1 : 0.75;
+  const getOpacity = (d: SavedTrack) => (d.track.popularity === maxPopularity ? 1 : 0.75);
 
   const getStroke = (d: SavedTrack) =>
-    d.track.popularity === maxPopularity
-      ? cssColors.spotifyGreenLight
-      : 'rgba(0,0,0,0.2)';
+    d.track.popularity === maxPopularity ? cssColors.spotifyGreenLight : 'rgba(0,0,0,0.2)';
 
-  const getStrokeWidth = (d: SavedTrack) =>
-    d.track.popularity === maxPopularity ? 2 : 0.5;
+  const getStrokeWidth = (d: SavedTrack) => (d.track.popularity === maxPopularity ? 2 : 0.5);
 
   // Get or create the container group for data points
   let container = svg.select<SVGGElement>('g.data-points-container');
@@ -245,10 +233,7 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
     .append('circle')
     .attr('class', 'data-point')
     .attr('cx', (d: SavedTrack) => x(new Date(d.added_at)))
-    .attr(
-      'cy',
-      isFirstRender ? startY : (d: SavedTrack) => y(d.track.popularity)
-    )
+    .attr('cy', isFirstRender ? startY : (d: SavedTrack) => y(d.track.popularity))
     .attr('r', isFirstRender ? MIN_RADIUS : getRadius)
     .attr('fill', isFirstRender ? startColor : getFill)
     .attr('opacity', isFirstRender ? 0.6 : getOpacity)
@@ -300,17 +285,12 @@ function escapeHtml(text: string): string {
 /**
  * Create tooltip HTML content
  */
-export function createTooltipContent(
-  track: SavedTrack,
-  popColor: string
-): string {
+export function createTooltipContent(track: SavedTrack, popColor: string): string {
   const addedDate = new Date(track.added_at).toLocaleDateString();
 
   // Escape all user-provided content to prevent XSS
   const trackName = escapeHtml(track.track.name);
-  const artistNames = escapeHtml(
-    track.track.artists.map((a) => a.name).join(', ')
-  );
+  const artistNames = escapeHtml(track.track.artists.map((a) => a.name).join(', '));
   const albumName = escapeHtml(track.track.album.name);
   // Escape color value in case it's manipulated
   const safeColor = escapeHtml(popColor);

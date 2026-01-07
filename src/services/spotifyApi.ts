@@ -10,11 +10,7 @@ import { getValidAccessToken } from './tokenService';
 import { SPOTIFY, RATE_LIMIT } from '../constants';
 import { SpotifyApiError, RateLimitError } from '../utils/errors';
 import { loggers } from '../utils/logger';
-import type {
-  SavedTrack,
-  SpotifyArtist,
-  SpotifyUserProfile,
-} from '../types/spotify';
+import type { SavedTrack, SpotifyArtist, SpotifyUserProfile } from '../types/spotify';
 
 const log = loggers.api;
 
@@ -30,8 +26,7 @@ function calculateBackoffDelay(
 ): number {
   const exponentialDelay = baseDelay * Math.pow(2, attempt);
   // Use ± jitter to better distribute retry timing and avoid thundering herd
-  const jitter =
-    exponentialDelay * RATE_LIMIT.JITTER_FACTOR * (Math.random() - 0.5);
+  const jitter = exponentialDelay * RATE_LIMIT.JITTER_FACTOR * (Math.random() - 0.5);
   return Math.min(exponentialDelay + jitter, RATE_LIMIT.MAX_RETRY_DELAY_MS);
 }
 
@@ -86,10 +81,7 @@ async function apiRequest<T>(
     }
 
     if (retryCount >= RATE_LIMIT.MAX_RETRIES) {
-      throw new RateLimitError(
-        retryAfterSeconds,
-        'Rate limit exceeded after max retries'
-      );
+      throw new RateLimitError(retryAfterSeconds, 'Rate limit exceeded after max retries');
     }
 
     log.warn(
@@ -145,8 +137,7 @@ interface PaginatedResponse {
  */
 export async function fetchAllSavedTracks(): Promise<SavedTrack[]> {
   const tracks: SavedTrack[] = [];
-  let nextEndpoint: string | null =
-    `v1/me/tracks?offset=0&limit=${SPOTIFY.BATCH_SIZE}`;
+  let nextEndpoint: string | null = `v1/me/tracks?offset=0&limit=${SPOTIFY.BATCH_SIZE}`;
 
   while (nextEndpoint) {
     // Handle full URLs from pagination (strip base if present)
@@ -154,8 +145,7 @@ export async function fetchAllSavedTracks(): Promise<SavedTrack[]> {
       ? nextEndpoint.replace(SPOTIFY_API_BASE, '')
       : nextEndpoint;
 
-    const data: PaginatedResponse =
-      await apiRequest<PaginatedResponse>(endpoint);
+    const data: PaginatedResponse = await apiRequest<PaginatedResponse>(endpoint);
 
     if (data.items) {
       tracks.push(...data.items);
@@ -171,17 +161,13 @@ export async function fetchAllSavedTracks(): Promise<SavedTrack[]> {
 /**
  * Fetch artists by IDs (max 50 per request)
  */
-export async function fetchArtists(
-  artistIds: string[]
-): Promise<SpotifyArtist[]> {
+export async function fetchArtists(artistIds: string[]): Promise<SpotifyArtist[]> {
   if (artistIds.length === 0) {
     return [];
   }
 
   if (artistIds.length > SPOTIFY.BATCH_SIZE) {
-    throw new Error(
-      `Cannot fetch more than ${SPOTIFY.BATCH_SIZE} artists at once`
-    );
+    throw new Error(`Cannot fetch more than ${SPOTIFY.BATCH_SIZE} artists at once`);
   }
 
   const data = await apiRequest<{ artists: (SpotifyArtist | null)[] }>(
@@ -213,9 +199,7 @@ export async function fetchArtistsBatch(
 
   for (let i = 0; i < batches.length; i += concurrency) {
     const batchGroup = batches.slice(i, i + concurrency);
-    const batchResults = await Promise.all(
-      batchGroup.map((batch) => fetchArtists(batch))
-    );
+    const batchResults = await Promise.all(batchGroup.map((batch) => fetchArtists(batch)));
     results.push(...batchResults.flat());
   }
 
@@ -239,9 +223,7 @@ export async function startPlayback(
  * Pause playback
  */
 export async function pausePlayback(deviceId?: string): Promise<void> {
-  const endpoint = deviceId
-    ? `v1/me/player/pause?device_id=${deviceId}`
-    : 'v1/me/player/pause';
+  const endpoint = deviceId ? `v1/me/player/pause?device_id=${deviceId}` : 'v1/me/player/pause';
 
   await apiRequest(endpoint, { method: 'PUT' });
 }
@@ -263,10 +245,7 @@ export async function getPlaybackState(): Promise<{
 /**
  * Transfer playback to a device
  */
-export async function transferPlayback(
-  deviceId: string,
-  play: boolean = false
-): Promise<void> {
+export async function transferPlayback(deviceId: string, play: boolean = false): Promise<void> {
   await apiRequest('v1/me/player', {
     method: 'PUT',
     body: JSON.stringify({

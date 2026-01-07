@@ -23,5 +23,4 @@ export const CACHE_CONFIG = {
   LOCALSTORAGE_PREFIX: 'sfc_', // spotify-favorites-cache
 } as const;
 
-export type StoreNames =
-  (typeof CACHE_CONFIG.STORES)[keyof typeof CACHE_CONFIG.STORES];
+export type StoreNames = (typeof CACHE_CONFIG.STORES)[keyof typeof CACHE_CONFIG.STORES];

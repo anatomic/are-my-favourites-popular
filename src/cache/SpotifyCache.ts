@@ -68,10 +68,7 @@ class SpotifyCache {
     await this._ensureInit();
 
     const cacheKey = `user_${userId}`;
-    const cached = await this._cacheService.get<TrackCacheEntry>(
-      STORES.TRACKS,
-      cacheKey
-    );
+    const cached = await this._cacheService.get<TrackCacheEntry>(STORES.TRACKS, cacheKey);
 
     if (!cached) return null;
 
@@ -146,10 +143,7 @@ class SpotifyCache {
     for (const artistId of artistIds) {
       const cached = cachedEntries.get(artistId);
 
-      if (
-        cached &&
-        !this._cacheService.isExpired(cached.cachedAt, ARTIST_CACHE_TTL)
-      ) {
+      if (cached && !this._cacheService.isExpired(cached.cachedAt, ARTIST_CACHE_TTL)) {
         cachedArtists.set(artistId, cached.artist);
       } else {
         uncachedIds.push(artistId);

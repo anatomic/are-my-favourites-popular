@@ -50,9 +50,7 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
 
   /* Typography */
-  --font-family:
-    -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial,
-    sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-base: 14px;

@@ -28,16 +28,12 @@ let playerDeviceId: string | null = null;
  * @param getAccessToken - Async function that returns a valid access token
  * @returns Player state and control methods
  */
-export function useSpotifyPlayer(
-  getAccessToken: () => Promise<string>
-): UseSpotifyPlayerReturn {
+export function useSpotifyPlayer(getAccessToken: () => Promise<string>): UseSpotifyPlayerReturn {
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isPremium, setIsPremium] = useState<boolean | null>(null); // null = unknown, true/false = determined
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [localPlayerState, setLocalPlayerState] =
-    useState<WebPlaybackState | null>(null);
-  const [externalPlayerState, setExternalPlayerState] =
-    useState<SpotifyPlaybackState | null>(null);
+  const [localPlayerState, setLocalPlayerState] = useState<WebPlaybackState | null>(null);
+  const [externalPlayerState, setExternalPlayerState] = useState<SpotifyPlaybackState | null>(null);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,9 +72,7 @@ export function useSpotifyPlayer(
     if (!mountedRef.current) return;
 
     try {
-      const response = await makeApiRequest(
-        'https://api.spotify.com/v1/me/player'
-      );
+      const response = await makeApiRequest('https://api.spotify.com/v1/me/player');
 
       if (response.status === 204) {
         // No active playback
@@ -220,24 +214,17 @@ export function useSpotifyPlayer(
 
               try {
                 const freshToken = await getAccessToken();
-                const resp = await fetch(
-                  'https://api.spotify.com/v1/me/player/devices',
-                  {
-                    headers: { Authorization: `Bearer ${freshToken}` },
-                  }
-                );
+                const resp = await fetch('https://api.spotify.com/v1/me/player/devices', {
+                  headers: { Authorization: `Bearer ${freshToken}` },
+                });
 
                 if (resp.ok) {
                   const { devices }: SpotifyDevicesResponse = await resp.json();
-                  const ourDevice = devices.find(
-                    (d: SpotifyDevice) => d.name === PLAYER.NAME
-                  );
+                  const ourDevice = devices.find((d: SpotifyDevice) => d.name === PLAYER.NAME);
 
                   if (ourDevice) {
                     if (ourDevice.id !== sdkDeviceId) {
-                      log.log(
-                        'Device ID resolved via API (SDK mismatch fixed)'
-                      );
+                      log.log('Device ID resolved via API (SDK mismatch fixed)');
                     }
                     return ourDevice.id;
                   }
@@ -250,10 +237,7 @@ export function useSpotifyPlayer(
               // Wait before retry with exponential backoff
               if (attempt < retries - 1) {
                 await new Promise((r) =>
-                  setTimeout(
-                    r,
-                    delay * Math.pow(RETRY.BACKOFF_MULTIPLIER, attempt)
-                  )
+                  setTimeout(r, delay * Math.pow(RETRY.BACKOFF_MULTIPLIER, attempt))
                 );
               }
             }
@@ -372,10 +356,7 @@ export function useSpotifyPlayer(
       const interval = isCurrentlyPlaying
         ? PLAYER.POLL_INTERVAL_PLAYING_MS
         : PLAYER.POLL_INTERVAL_PAUSED_MS;
-      pollIntervalRef.current = window.setInterval(
-        fetchExternalPlaybackState,
-        interval
-      );
+      pollIntervalRef.current = window.setInterval(fetchExternalPlaybackState, interval);
     };
 
     // Initial fetch and start polling
@@ -411,20 +392,10 @@ export function useSpotifyPlayer(
   // Each iteration waits first, then retries. The delays [1000, 2000, 3000]ms give
   // the web player time to become active after a cold start or transfer.
   const retryPlay = useCallback(
-    async (
-      trackUri: string,
-      positionMs: number,
-      targetDeviceId: string
-    ): Promise<boolean> => {
-      for (
-        let attempt = 0;
-        attempt < RETRY.PLAY_RETRY_DELAYS_MS.length;
-        attempt++
-      ) {
+    async (trackUri: string, positionMs: number, targetDeviceId: string): Promise<boolean> => {
+      for (let attempt = 0; attempt < RETRY.PLAY_RETRY_DELAYS_MS.length; attempt++) {
         // Wait before each retry attempt to allow player to become ready
-        await new Promise((r) =>
-          setTimeout(r, RETRY.PLAY_RETRY_DELAYS_MS[attempt])
-        );
+        await new Promise((r) => setTimeout(r, RETRY.PLAY_RETRY_DELAYS_MS[attempt]));
 
         const response = await makeApiRequest(
           `https://api.spotify.com/v1/me/player/play?device_id=${targetDeviceId}`,
@@ -471,17 +442,12 @@ export function useSpotifyPlayer(
           'https://api.spotify.com/v1/me/player/devices'
         );
         if (devicesResponse.ok) {
-          const { devices }: SpotifyDevicesResponse =
-            await devicesResponse.json();
-          const ourDevice = devices.find(
-            (d: SpotifyDevice) => d.id === deviceId
-          );
+          const { devices }: SpotifyDevicesResponse = await devicesResponse.json();
+          const ourDevice = devices.find((d: SpotifyDevice) => d.id === deviceId);
 
           if (!ourDevice) {
             // Device not found by ID - try to find by name
-            const byName = devices.find(
-              (d: SpotifyDevice) => d.name === PLAYER.NAME
-            );
+            const byName = devices.find((d: SpotifyDevice) => d.name === PLAYER.NAME);
             if (byName) {
               log.log('Device ID corrected via name lookup');
               targetDeviceId = byName.id;
@@ -497,9 +463,7 @@ export function useSpotifyPlayer(
                   return false;
                 }
                 // Wait for ready event to resolve new device ID
-                await new Promise((resolve) =>
-                  setTimeout(resolve, RETRY.RECONNECT_DELAY_MS)
-                );
+                await new Promise((resolve) => setTimeout(resolve, RETRY.RECONNECT_DELAY_MS));
                 // Use the newly resolved device ID
                 targetDeviceId = playerDeviceId || deviceId;
               }
@@ -528,40 +492,28 @@ export function useSpotifyPlayer(
 
         // If 404 or 403, device may not be active - transfer playback and retry
         if (response.status === 404 || response.status === 403) {
-          log.log(
-            `Got ${response.status}, transferring playback to our device...`
-          );
+          log.log(`Got ${response.status}, transferring playback to our device...`);
 
           // Transfer playback to our device
-          const transferResponse = await makeApiRequest(
-            'https://api.spotify.com/v1/me/player',
-            {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                device_ids: [targetDeviceId],
-                play: false,
-              }),
-            }
-          );
+          const transferResponse = await makeApiRequest('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              device_ids: [targetDeviceId],
+              play: false,
+            }),
+          });
 
           if (transferResponse.ok || transferResponse.status === 204) {
             // Wait for transfer to complete
             await new Promise((r) => setTimeout(r, RETRY.TRANSFER_DELAY_MS));
 
             // Retry the play request
-            const success = await retryPlay(
-              trackUri,
-              positionMs,
-              targetDeviceId
-            );
+            const success = await retryPlay(trackUri, positionMs, targetDeviceId);
 
             if (success) {
               setError(null);
-              setTimeout(
-                fetchExternalPlaybackState,
-                PLAYER.STATE_REFRESH_DELAY_MS
-              );
+              setTimeout(fetchExternalPlaybackState, PLAYER.STATE_REFRESH_DELAY_MS);
               return true;
             }
           }
@@ -578,13 +530,7 @@ export function useSpotifyPlayer(
         return false;
       }
     },
-    [
-      deviceId,
-      makeApiRequest,
-      fetchExternalPlaybackState,
-      activatePlayer,
-      retryPlay,
-    ]
+    [deviceId, makeApiRequest, fetchExternalPlaybackState, activatePlayer, retryPlay]
   );
 
   // Pause playback (works on any device)
@@ -703,8 +649,7 @@ export function useSpotifyPlayer(
   const isPlaying: boolean = externalPlayerState?.is_playing || false;
   const position: number = externalPlayerState?.progress_ms || 0;
   const duration: number = externalPlayerState?.item?.duration_ms || 0;
-  const currentDevice: SpotifyDevice | null =
-    externalPlayerState?.device || null;
+  const currentDevice: SpotifyDevice | null = externalPlayerState?.device || null;
 
   return {
     // State

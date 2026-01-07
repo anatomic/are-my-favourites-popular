@@ -81,8 +81,7 @@ function Player({
   const [localPosition, setLocalPosition] = useState<number>(position);
   const [isDraggingProgress, setIsDraggingProgress] = useState<boolean>(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState<boolean>(false);
-  const [hasInitializedVolume, setHasInitializedVolume] =
-    useState<boolean>(false);
+  const [hasInitializedVolume, setHasInitializedVolume] = useState<boolean>(false);
   const progressRef = useRef<HTMLDivElement>(null);
   const volumeRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -171,21 +170,15 @@ function Player({
   }, [isDraggingProgress, duration, onSeek]);
 
   // Volume bar drag handlers
-  const handleVolumeMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>): void => {
-      if (!volumeRef.current) return;
-      e.preventDefault();
-      setIsDraggingVolume(true);
+  const handleVolumeMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
+    if (!volumeRef.current) return;
+    e.preventDefault();
+    setIsDraggingVolume(true);
 
-      const rect = volumeRef.current.getBoundingClientRect();
-      const newVolume = Math.max(
-        0,
-        Math.min((e.clientX - rect.left) / rect.width, 1)
-      );
-      setVolume(newVolume);
-    },
-    []
-  );
+    const rect = volumeRef.current.getBoundingClientRect();
+    const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
+    setVolume(newVolume);
+  }, []);
 
   useEffect(() => {
     if (!isDraggingVolume) return;
@@ -193,20 +186,14 @@ function Player({
     const handleMouseMove = (e: MouseEvent): void => {
       if (!volumeRef.current) return;
       const rect = volumeRef.current.getBoundingClientRect();
-      const newVolume = Math.max(
-        0,
-        Math.min((e.clientX - rect.left) / rect.width, 1)
-      );
+      const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
       setVolume(newVolume);
     };
 
     const handleMouseUp = (e: MouseEvent): void => {
       if (volumeRef.current) {
         const rect = volumeRef.current.getBoundingClientRect();
-        const newVolume = Math.max(
-          0,
-          Math.min((e.clientX - rect.left) / rect.width, 1)
-        );
+        const newVolume = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
         onVolumeChange?.(newVolume);
       }
       setIsDraggingVolume(false);
@@ -266,13 +253,9 @@ function Player({
     <div className="player">
       {/* Album Art */}
       <div className="player-artwork">
-        {currentTrack?.album?.images?.[0]?.url ||
-        currentTrack?.album?.images?.[2]?.url ? (
+        {currentTrack?.album?.images?.[0]?.url || currentTrack?.album?.images?.[2]?.url ? (
           <img
-            src={
-              currentTrack.album.images[2]?.url ||
-              currentTrack.album.images[0]?.url
-            }
+            src={currentTrack.album.images[2]?.url || currentTrack.album.images[0]?.url}
             alt={currentTrack.album.name}
             className="player-artwork-img"
           />
@@ -320,9 +303,7 @@ function Player({
             </span>
           </>
         ) : (
-          <span className="player-no-track">
-            Click a track on the chart to play
-          </span>
+          <span className="player-no-track">Click a track on the chart to play</span>
         )}
       </div>
 
@@ -366,10 +347,7 @@ function Player({
             className="player-progress-fill"
             style={{ transform: `scaleX(${progressPercent / 100})` }}
           />
-          <div
-            className="player-progress-handle"
-            style={{ left: `${progressPercent}%` }}
-          />
+          <div className="player-progress-handle" style={{ left: `${progressPercent}%` }} />
         </div>
         <span className="player-time">{formatTime(duration)}</span>
       </div>
@@ -392,14 +370,8 @@ function Player({
           className={`player-volume-bar${isDraggingVolume ? ' is-dragging' : ''}`}
           onMouseDown={handleVolumeMouseDown}
         >
-          <div
-            className="player-volume-fill"
-            style={{ transform: `scaleX(${volume})` }}
-          />
-          <div
-            className="player-volume-handle"
-            style={{ left: `${volume * 100}%` }}
-          />
+          <div className="player-volume-fill" style={{ transform: `scaleX(${volume})` }} />
+          <div className="player-volume-handle" style={{ left: `${volume * 100}%` }} />
         </div>
       </div>
     </div>

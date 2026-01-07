@@ -125,13 +125,10 @@ export function useSpotifyData(
  */
 async function loadArtistsForTracks(tracks: SavedTrack[]): Promise<ArtistMap> {
   // Extract unique artist IDs
-  const artistIds = [
-    ...new Set(tracks.flatMap((t) => t.track.artists.map((a) => a.id))),
-  ];
+  const artistIds = [...new Set(tracks.flatMap((t) => t.track.artists.map((a) => a.id)))];
 
   // Check which artists are already cached
-  const { cachedArtists, uncachedIds } =
-    await spotifyCache.getCachedArtists(artistIds);
+  const { cachedArtists, uncachedIds } = await spotifyCache.getCachedArtists(artistIds);
 
   // Start with cached artists
   const artistMap: ArtistMap = new Map(cachedArtists);

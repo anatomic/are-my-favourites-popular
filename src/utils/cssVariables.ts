@@ -24,9 +24,7 @@ export function getCssVariable(name: string): string {
     return cached;
   }
 
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   if (!value) {
     throw new Error(`CSS variable "${name}" is not defined on :root.`);

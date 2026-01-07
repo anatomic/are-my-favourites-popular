@@ -54,12 +54,10 @@ Object.defineProperty(globalThis, 'crypto', {
       return arr;
     },
     subtle: {
-      digest: vi
-        .fn()
-        .mockImplementation(async (_algorithm: string, _data: ArrayBuffer) => {
-          // Return a mock hash for testing
-          return new Uint8Array(32).buffer;
-        }),
+      digest: vi.fn().mockImplementation(async (_algorithm: string, _data: ArrayBuffer) => {
+        // Return a mock hash for testing
+        return new Uint8Array(32).buffer;
+      }),
     },
   },
 });

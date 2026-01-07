@@ -155,9 +155,7 @@ This app follows [Spotify's Design Guidelines](https://developer.spotify.com/doc
 Use platform defaults with this fallback stack:
 
 ```css
-font-family:
-  -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial,
-  sans-serif;
+font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
 ```
 
 **Scale:**

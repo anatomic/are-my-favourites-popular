@@ -75,9 +75,7 @@ const X_AXIS_FUTURE_MONTHS = 6; // How many months to extend X axis into the fut
 export function useContainerSize(
   containerRef: RefObject<HTMLElement | null>
 ): { width: number; height: number } | null {
-  const [size, setSize] = useState<{ width: number; height: number } | null>(
-    null
-  );
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -167,10 +165,7 @@ function calculateDimensions(
 function createColorScale(): (popularity: number) => string {
   return (popularity: number): string => {
     const t = popularity / 100;
-    return interpolateRgb(
-      cssColors.chartGradientLow,
-      cssColors.chartGradientHigh
-    )(t);
+    return interpolateRgb(cssColors.chartGradientLow, cssColors.chartGradientHigh)(t);
   };
 }
 
@@ -205,20 +200,13 @@ export function useChartConfig(
     );
 
     // Calculate dimensions from container size
-    const dimensions = calculateDimensions(
-      containerSize.width,
-      containerSize.height
-    );
+    const dimensions = calculateDimensions(containerSize.width, containerSize.height);
     const { width, height, margins } = dimensions;
 
     // Calculate data extents
-    const firstDate = min(
-      sortedTracks,
-      (d: SavedTrack) => new Date(d.added_at)
-    );
+    const firstDate = min(sortedTracks, (d: SavedTrack) => new Date(d.added_at));
     const today = new Date();
-    const maxPopularity =
-      max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
+    const maxPopularity = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
 
     // Create scales - start 1 week before first track, end 6 months after today
     const xEnd = new Date(

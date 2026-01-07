@@ -157,28 +157,13 @@ export interface WebPlaybackPlayer {
   connect(): Promise<boolean>;
   disconnect(): void;
   // Event listener overloads for type safety
-  addListener(
-    event: 'initialization_error',
-    callback: (error: WebPlaybackError) => void
-  ): void;
-  addListener(
-    event: 'authentication_error',
-    callback: (error: WebPlaybackError) => void
-  ): void;
-  addListener(
-    event: 'account_error',
-    callback: (error: WebPlaybackError) => void
-  ): void;
-  addListener(
-    event: 'playback_error',
-    callback: (error: WebPlaybackError) => void
-  ): void;
+  addListener(event: 'initialization_error', callback: (error: WebPlaybackError) => void): void;
+  addListener(event: 'authentication_error', callback: (error: WebPlaybackError) => void): void;
+  addListener(event: 'account_error', callback: (error: WebPlaybackError) => void): void;
+  addListener(event: 'playback_error', callback: (error: WebPlaybackError) => void): void;
   addListener(event: 'autoplay_failed', callback: () => void): void;
   addListener(event: 'ready', callback: (data: WebPlaybackReady) => void): void;
-  addListener(
-    event: 'not_ready',
-    callback: (data: WebPlaybackReady) => void
-  ): void;
+  addListener(event: 'not_ready', callback: (data: WebPlaybackReady) => void): void;
   addListener(
     event: 'player_state_changed',
     callback: (state: WebPlaybackState | null) => void

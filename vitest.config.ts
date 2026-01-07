@@ -11,18 +11,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/types/**',
-      ],
+      exclude: ['node_modules/', 'src/test/', '**/*.d.ts', '**/*.config.*', '**/types/**'],
     },
   },
   define: {
-    CLIENT_ID: JSON.stringify(
-      process.env.VITE_SPOTIFY_CLIENT_ID || 'test-client-id'
-    ),
+    CLIENT_ID: JSON.stringify(process.env.VITE_SPOTIFY_CLIENT_ID || 'test-client-id'),
   },
 });

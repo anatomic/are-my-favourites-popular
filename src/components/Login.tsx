@@ -43,17 +43,14 @@ function Login(): ReactElement {
           <span className="text-green">Popular?</span>
         </h1>
         <p className="login-description">
-          Discover how your saved tracks compare to global listening trends.
-          Visualize your music taste over time and uncover hidden gems in your
-          library.
+          Discover how your saved tracks compare to global listening trends. Visualize your music
+          taste over time and uncover hidden gems in your library.
         </p>
         <button onClick={handleLogin} className="btn btn--login">
           <SpotifyIcon />
           Continue with Spotify
         </button>
-        <p className="login-disclaimer">
-          We only read your saved tracks. Your data stays private.
-        </p>
+        <p className="login-disclaimer">We only read your saved tracks. Your data stays private.</p>
       </div>
       <div className="login-footer">
         <p>
