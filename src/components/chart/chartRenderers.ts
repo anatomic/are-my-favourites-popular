@@ -23,7 +23,7 @@ import { cssColors } from "../../utils/cssVariables";
 transition;
 
 // Animation timing configuration
-const TRANSITION_DURATION = 600;
+const TRANSITION_DURATION = 500;
 const MAX_STAGGER_DELAY = 1000; // Cap total stagger time for large datasets
 const MIN_RADIUS = 2; // Starting radius for animation
 
@@ -258,7 +258,7 @@ export function renderDataPoints(svg: SVGSelection, config: ChartConfig): void {
 
   // Animate entering elements (only stagger on first render)
   if (isFirstRender) {
-    entering.each(function (this: SVGCircleElement, d: SavedTrack, i: number) {
+    entering.each(function (this: SVGCircleElement, d: SavedTrack) {
       // Deterministic stagger based on index, capped at MAX_STAGGER_DELAY
       const delay = Math.random() * MAX_STAGGER_DELAY;
       select(this)
