@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useMemo, useState } from 'react';
+import { interpolateRgb } from 'd3-interpolate';
 import type { StatsProps, SavedTrack, SpotifyArtist } from '../types/spotify';
 import { cssColors } from '../utils/cssVariables';
 import './stats.css';
@@ -51,8 +52,61 @@ interface YearlySummaryItem {
 
 type SortMode = 'count' | 'popularity';
 
-// Highlight colors loaded from CSS variables at runtime
-// See src/styles/variables.css for the source of truth
+// Heatmap types
+interface DayCount {
+  date: Date | null;
+  count: number; // -1 for empty padding cells
+  dayOfWeek: number;
+}
+
+interface YearHeatmapData {
+  year: number;
+  weeks: DayCount[][];
+  minCount: number; // Minimum non-zero count for that year
+  maxCount: number;
+}
+
+interface HeatmapTooltip {
+  date: Date;
+  count: number;
+  x: number;
+  y: number;
+}
+
+// Quarter-based grey backgrounds for 0-track cells
+// Four distinct shades for visual progression through the year
+// Darkest must be lighter than container background (#181818)
+const QUARTER_GREYS = [
+  '#3a3a3a', // Q1 (Jan-Mar) - lightest
+  '#313131', // Q2 (Apr-Jun)
+  '#282828', // Q3 (Jul-Sep)
+  '#202020', // Q4 (Oct-Dec) - darkest
+];
+// Map month (0-11) to quarter grey
+const getMonthGrey = (month: number): string => QUARTER_GREYS[Math.floor(month / 3)];
+
+// Generate heatmap color based on track count for a specific year
+// Scale from dark green (fewest tracks) to bright Spotify green (most tracks)
+// 0 tracks get quarter-based gray background for visual distinction
+function getHeatmapColor(
+  count: number,
+  minCount: number,
+  maxCount: number,
+  month?: number
+): string {
+  if (count === 0) {
+    // Use quarter-based grey if month is provided, otherwise default grey
+    return month !== undefined ? getMonthGrey(month) : cssColors.surfaceHighlight;
+  }
+  // Scale from min to max (not 0 to max)
+  // If all non-zero days have the same count, show full brightness
+  const range = maxCount - minCount;
+  const normalized = range > 0 ? (count - minCount) / range : 1;
+  // Use sqrt for better distribution of lower values
+  const sqrtNormalized = Math.sqrt(normalized);
+  // Interpolate from dark green to bright Spotify green
+  return interpolateRgb('#1a4d2e', cssColors.spotifyGreen)(sqrtNormalized);
+}
 
 function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
   // Top 20 most popular songs
@@ -185,6 +239,91 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
       })
     );
   }, [tracks]);
+
+  // Heatmap data - aggregate tracks by day for each year
+  const heatmapData = useMemo((): Map<number, YearHeatmapData> => {
+    // Group tracks by date string 'YYYY-MM-DD'
+    const countsByDate: Record<string, number> = {};
+    const years = new Set<number>();
+
+    tracks.forEach((t: SavedTrack) => {
+      const dateKey = t.added_at.slice(0, 10);
+      countsByDate[dateKey] = (countsByDate[dateKey] || 0) + 1;
+      years.add(parseInt(dateKey.slice(0, 4)));
+    });
+
+    const result = new Map<number, YearHeatmapData>();
+
+    // For each year, generate all days organized into weeks
+    years.forEach((year) => {
+      const yearStart = new Date(year, 0, 1);
+      const yearEnd = new Date(year, 11, 31);
+
+      const weeks: DayCount[][] = [];
+      let currentWeek: DayCount[] = [];
+
+      // Pad first week with empty cells to align days of week
+      const firstDayOfWeek = yearStart.getDay(); // 0=Sunday
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        currentWeek.push({ date: null, count: -1, dayOfWeek: i });
+      }
+
+      let maxCount = 0;
+      let minCount = Infinity;
+      const current = new Date(yearStart);
+
+      while (current <= yearEnd) {
+        const dateKey = current.toISOString().slice(0, 10);
+        const count = countsByDate[dateKey] || 0;
+        if (count > maxCount) maxCount = count;
+        if (count > 0 && count < minCount) minCount = count;
+
+        currentWeek.push({
+          date: new Date(current),
+          count,
+          dayOfWeek: current.getDay(),
+        });
+
+        if (currentWeek.length === 7) {
+          weeks.push(currentWeek);
+          currentWeek = [];
+        }
+
+        current.setDate(current.getDate() + 1);
+      }
+
+      // Push final partial week if any
+      if (currentWeek.length > 0) {
+        weeks.push(currentWeek);
+      }
+
+      // If no tracks this year, minCount defaults to maxCount (both 0)
+      if (minCount === Infinity) minCount = maxCount;
+
+      result.set(year, { year, weeks, minCount, maxCount: maxCount || 1 });
+    });
+
+    return result;
+  }, [tracks]);
+
+  // All years sorted descending (most recent first)
+  const heatmapYearsSorted = useMemo((): YearHeatmapData[] => {
+    return [...heatmapData.values()].sort((a, b) => b.year - a.year);
+  }, [heatmapData]);
+
+  // Global min/max across all years for consistent color scaling
+  const globalHeatmapRange = useMemo((): { minCount: number; maxCount: number } => {
+    let globalMin = Infinity;
+    let globalMax = 0;
+    heatmapYearsSorted.forEach((yearData) => {
+      if (yearData.minCount < globalMin && yearData.minCount > 0) globalMin = yearData.minCount;
+      if (yearData.maxCount > globalMax) globalMax = yearData.maxCount;
+    });
+    return { minCount: globalMin === Infinity ? 1 : globalMin, maxCount: globalMax || 1 };
+  }, [heatmapYearsSorted]);
+
+  // Tooltip state for heatmap
+  const [heatmapTooltip, setHeatmapTooltip] = useState<HeatmapTooltip | null>(null);
 
   return (
     <div className="stats">
@@ -455,6 +594,126 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
           </div>
         </div>
       </div>
+
+      {/* Activity Heatmap */}
+      {heatmapYearsSorted.length > 0 && (
+        <div className="stats-heatmap">
+          <div className="heatmap-header">
+            <h3>Your Liked Songs Heatmap</h3>
+            {/* Legend - top right aligned with title */}
+            <div className="heatmap-legend">
+              <span className="heatmap-legend-label">Less</span>
+              <div className="heatmap-legend-cells">
+                <div
+                  className="heatmap-legend-cell"
+                  style={{ backgroundColor: QUARTER_GREYS[0] }}
+                />
+                <div className="heatmap-legend-cell" style={{ backgroundColor: '#1a4d2e' }} />
+                <div
+                  className="heatmap-legend-cell"
+                  style={{
+                    backgroundColor: interpolateRgb(
+                      '#1a4d2e',
+                      cssColors.spotifyGreen
+                    )(Math.sqrt(0.33)),
+                  }}
+                />
+                <div
+                  className="heatmap-legend-cell"
+                  style={{
+                    backgroundColor: interpolateRgb(
+                      '#1a4d2e',
+                      cssColors.spotifyGreen
+                    )(Math.sqrt(0.67)),
+                  }}
+                />
+                <div
+                  className="heatmap-legend-cell"
+                  style={{ backgroundColor: cssColors.spotifyGreen }}
+                />
+              </div>
+              <span className="heatmap-legend-label">More</span>
+            </div>
+          </div>
+          <div className="heatmap-layout">
+            {/* Stacked years */}
+            <div className="heatmap-years-stack">
+              {heatmapYearsSorted.map((yearData) => (
+                <div key={yearData.year} className="heatmap-year-row">
+                  {/* Year label - centered above grid */}
+                  <div className="heatmap-year-label">{yearData.year}</div>
+
+                  {/* Day labels - horizontal (S M T W T F S) */}
+                  <div className="heatmap-day-labels">
+                    <span>S</span>
+                    <span>M</span>
+                    <span>T</span>
+                    <span>W</span>
+                    <span>T</span>
+                    <span>F</span>
+                    <span>S</span>
+                  </div>
+
+                  {/* Grid of cells - vertical layout (weeks as rows) */}
+                  <div className="heatmap-grid">
+                    {yearData.weeks.flatMap((week, weekIndex) =>
+                      week.map((day, dayIndex) => (
+                        <div
+                          key={`${yearData.year}-${weekIndex}-${dayIndex}`}
+                          className={`heatmap-cell ${day.count < 0 ? 'heatmap-cell--empty' : ''}`}
+                          style={{
+                            backgroundColor:
+                              day.count >= 0
+                                ? getHeatmapColor(
+                                    day.count,
+                                    globalHeatmapRange.minCount,
+                                    globalHeatmapRange.maxCount,
+                                    day.date?.getMonth()
+                                  )
+                                : 'transparent',
+                            gridRow: weekIndex + 1,
+                            gridColumn: day.dayOfWeek + 1,
+                          }}
+                          onMouseEnter={(e) => {
+                            if (day.date && day.count >= 0) {
+                              setHeatmapTooltip({
+                                date: day.date,
+                                count: day.count,
+                                x: e.clientX + 10,
+                                y: e.clientY - 30,
+                              });
+                            }
+                          }}
+                          onMouseLeave={() => setHeatmapTooltip(null)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tooltip */}
+          {heatmapTooltip && (
+            <div
+              className="heatmap-tooltip"
+              style={{ left: heatmapTooltip.x, top: heatmapTooltip.y }}
+            >
+              <span className="heatmap-tooltip-count">
+                {heatmapTooltip.count} track{heatmapTooltip.count !== 1 ? 's' : ''}
+              </span>
+              {' on '}
+              {heatmapTooltip.date.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

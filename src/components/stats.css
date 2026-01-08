@@ -344,6 +344,176 @@
   border-radius: 50%;
 }
 
+/* ===================== */
+/* Activity Heatmap      */
+/* ===================== */
+
+.stats-heatmap {
+  margin-top: var(--space-2xl);
+  padding: 0 var(--space-lg);
+  max-width: var(--max-width);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.stats-heatmap h3 {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  flex: 1;
+}
+
+/* Header with title and legend */
+.heatmap-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  position: relative;
+}
+
+.heatmap-header .heatmap-legend {
+  position: absolute;
+  right: 0;
+}
+
+/* Layout container */
+.heatmap-layout {
+  background: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+
+/* Years displayed in a grid (5 per row, reverse chronological) */
+.heatmap-years-stack {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-lg);
+  justify-items: center;
+}
+
+/* Individual year column */
+.heatmap-year-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Year label - centered above grid */
+.heatmap-year-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  text-align: center;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-xs);
+}
+
+/* Day labels (S M T W T F S) - horizontal above grid */
+.heatmap-day-labels {
+  display: grid;
+  grid-template-columns: repeat(7, 15px);
+  gap: 2px;
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.heatmap-day-labels span {
+  text-align: center;
+}
+
+/* Grid wrapper for each year */
+.heatmap-year-grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Month labels - vertical on left side */
+.heatmap-month-labels {
+  display: none; /* Will use row-based month markers instead */
+}
+
+/* Main grid of cells - now vertical (weeks as rows, days as columns) */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 15px);
+  grid-auto-flow: row;
+  gap: 2px;
+}
+
+/* Individual cell */
+.heatmap-cell {
+  border-radius: 2px;
+  background: var(--surface-highlight);
+  transition: transform var(--transition-fast);
+  width: 15px;
+  height: 15px;
+}
+
+.heatmap-cell:hover:not(.heatmap-cell--empty) {
+  transform: scale(1.2);
+  outline: 1px solid var(--text-muted);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.heatmap-cell--empty {
+  background: transparent;
+}
+
+/* Heatmap Legend */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.heatmap-legend-label {
+  margin: 0 var(--space-xs);
+}
+
+.heatmap-legend-cells {
+  display: flex;
+  gap: 3px;
+}
+
+.heatmap-legend-cell {
+  width: 15px;
+  height: 15px;
+  border-radius: 2px;
+}
+
+/* Heatmap Tooltip */
+.heatmap-tooltip {
+  position: fixed;
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.heatmap-tooltip-count {
+  font-weight: var(--font-weight-bold);
+  color: var(--spotify-green);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .stats-grid {
@@ -358,5 +528,30 @@
 
   .stats-yearly {
     padding: 0 var(--space-md);
+  }
+
+  .stats-heatmap {
+    padding: 0 var(--space-md);
+  }
+
+  .heatmap-layout {
+    padding: var(--space-md);
+  }
+
+  .heatmap-years-stack {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .heatmap-years-stack {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .heatmap-years-stack {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
