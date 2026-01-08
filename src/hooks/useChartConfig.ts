@@ -58,12 +58,12 @@ const DEFAULT_MARGINS: ChartMargins = {
   left: 60,
 };
 
-// Mobile margins - reduced left margin since we hide the axis label
+// Mobile margins - balanced padding, no axis label shown
 const MOBILE_MARGINS: ChartMargins = {
   top: 20,
-  right: 10,
+  right: 20,
   bottom: 40,
-  left: 35,
+  left: 30,
 };
 
 // Container measurement constants
