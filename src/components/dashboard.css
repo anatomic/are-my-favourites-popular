@@ -31,13 +31,29 @@
   width: 100%;
 }
 
+/* Chart Info (legend + stats container) */
+.chart-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-md) 0;
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.chart-info-separator {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-subtle);
+}
+
 /* Chart Legend */
 .chart-legend {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
   gap: var(--space-sm);
-  padding: var(--space-sm) 0;
+  max-width: 180px;
 }
 
 .chart-legend-gradient {
@@ -56,14 +72,66 @@
   color: var(--text-secondary);
 }
 
+.chart-legend-note {
+  flex-basis: 100%;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin: 0;
+  padding-top: var(--space-xs);
+}
+
+/* Chart Highlights (top track/artist thumbnails) */
+.chart-highlights {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.chart-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  text-decoration: none;
+  transition: transform var(--transition-fast);
+}
+
+.chart-highlight:hover {
+  transform: scale(1.05);
+}
+
+.chart-highlight__img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.chart-highlight__label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.chart-highlight__name {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.chart-highlight:hover .chart-highlight__name {
+  color: var(--spotify-green);
+}
+
 /* Chart Stats */
 .chart-stats {
   display: flex;
-  justify-content: center;
   gap: var(--space-xl);
-  padding: var(--space-md) 0;
-  border-top: 1px solid var(--border-subtle);
-  margin-top: var(--space-sm);
 }
 
 .chart-stat {
@@ -74,8 +142,8 @@
 }
 
 .chart-stat-value {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
 }
 
@@ -88,6 +156,7 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 /* Tooltip text-green utility */
