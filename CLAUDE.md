@@ -16,6 +16,26 @@ npm test         # Run tests in watch mode
 npm run test:run # Run tests once
 ```
 
+## Local Development
+
+**Production URL**: https://favometer.app
+
+**IMPORTANT**: When running locally, always use the IP address, NOT `localhost`:
+
+```
+http://127.0.0.1:3000
+```
+
+Spotify's OAuth redirect will reject `localhost` - only `127.0.0.1` is configured as a valid redirect URI in the Spotify Developer Dashboard.
+
+### Testing in Chrome
+
+When using browser automation or manually testing:
+
+1. Start the dev server: `npm run dev`
+2. Navigate to `http://127.0.0.1:3000` (not localhost)
+3. The Spotify OAuth flow will redirect back to `http://127.0.0.1:3000/callback`
+
 ## Validating Changes
 
 **IMPORTANT**: Always validate changes before pushing code.
