@@ -14,7 +14,6 @@ interface ArtistStats {
   id: string;
   name: string;
   count: number;
-  totalPop: number;
   years: Set<number>;
 }
 
@@ -69,7 +68,7 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
   const [artistSort, setArtistSort] = useState<SortMode>('count');
   const [genreSort, setGenreSort] = useState<SortMode>('count');
 
-  // Top 20 artists by track count (with avg popularity)
+  // Top 20 artists by track count (with Spotify artist popularity)
   const topArtists = useMemo((): ArtistStatsWithAvg[] => {
     const counts: Record<string, ArtistStats> = {};
     tracks.forEach((t: SavedTrack) => {
@@ -80,12 +79,10 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
             id: a.id,
             name: a.name,
             count: 0,
-            totalPop: 0,
             years: new Set(),
           };
         }
         counts[a.id].count++;
-        counts[a.id].totalPop += t.track.popularity;
         counts[a.id].years.add(year);
       });
     });
@@ -95,7 +92,8 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
           id: a.id,
           name: a.name,
           count: a.count,
-          avgPopularity: Math.round(a.totalPop / a.count),
+          // Use Spotify's artist popularity score
+          avgPopularity: artistMap?.get(a.id)?.popularity ?? 0,
           years: [...a.years].sort((x, y) => x - y),
         })
       )
@@ -103,13 +101,17 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
         artistSort === 'popularity' ? b.avgPopularity - a.avgPopularity : b.count - a.count
       )
       .slice(0, 20);
-  }, [tracks, artistSort]);
+  }, [tracks, artistSort, artistMap]);
 
   // Genre breakdown (only if artistMap is loaded)
+  // Uses average Spotify artist popularity weighted by track count
   const genreStats = useMemo((): GenreStats[] => {
     if (!artistMap || artistMap.size === 0) return [];
 
-    const stats: Record<string, { count: number; totalPop: number; years: Set<number> }> = {};
+    const stats: Record<
+      string,
+      { count: number; artistCounts: Map<string, number>; years: Set<number> }
+    > = {};
     tracks.forEach((t: SavedTrack) => {
       const year = new Date(t.added_at).getFullYear();
       t.track.artists.forEach((a: SpotifyArtist) => {
@@ -117,10 +119,10 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
         if (artist?.genres) {
           artist.genres.forEach((genre: string) => {
             if (!stats[genre]) {
-              stats[genre] = { count: 0, totalPop: 0, years: new Set() };
+              stats[genre] = { count: 0, artistCounts: new Map(), years: new Set() };
             }
             stats[genre].count++;
-            stats[genre].totalPop += t.track.popularity;
+            stats[genre].artistCounts.set(a.id, (stats[genre].artistCounts.get(a.id) ?? 0) + 1);
             stats[genre].years.add(year);
           });
         }
@@ -128,14 +130,24 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
     });
 
     return Object.entries(stats)
-      .map(
-        ([genre, data]): GenreStats => ({
+      .map(([genre, data]): GenreStats => {
+        // Calculate weighted average artist popularity (weighted by track count)
+        let weightedTotal = 0;
+        let totalWeight = 0;
+        data.artistCounts.forEach((trackCount, id) => {
+          const artistPop = artistMap.get(id)?.popularity ?? 0;
+          weightedTotal += artistPop * trackCount;
+          totalWeight += trackCount;
+        });
+        const avgArtistPop = totalWeight > 0 ? Math.round(weightedTotal / totalWeight) : 0;
+
+        return {
           genre,
           count: data.count,
-          avgPopularity: Math.round(data.totalPop / data.count),
+          avgPopularity: avgArtistPop,
           years: [...data.years].sort((x, y) => x - y),
-        })
-      )
+        };
+      })
       .sort((a, b) =>
         genreSort === 'popularity' ? b.avgPopularity - a.avgPopularity : b.count - a.count
       )
