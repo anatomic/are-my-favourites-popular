@@ -18,11 +18,13 @@ html {
   background: var(--surface-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
   background: var(--surface-base);
+  overflow-x: hidden;
 }
 
 /* Typography */

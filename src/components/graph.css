@@ -180,30 +180,14 @@
 @media (max-width: 600px) {
   .chart-container {
     padding: var(--space-sm);
-    /* Negative margin matches dashboard's --space-md horizontal padding */
-    margin-left: calc(-1 * var(--space-md));
-    margin-right: calc(-1 * var(--space-md));
+    /* Full-bleed: extend to viewport edges regardless of parent padding */
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
     border-radius: 0;
   }
 
   /* Hide y-axis label on mobile - numbers alone are sufficient */
   .axis-label {
     display: none;
-  }
-}
-
-/* Small mobile: Adjust negative margin to match dashboard's --space-sm padding */
-@media (max-width: 480px) {
-  .chart-container {
-    margin-left: calc(-1 * var(--space-sm));
-    margin-right: calc(-1 * var(--space-sm));
-  }
-}
-
-/* Extra small: Dashboard uses --space-sm all around */
-@media (max-width: 360px) {
-  .chart-container {
-    margin-left: calc(-1 * var(--space-sm));
-    margin-right: calc(-1 * var(--space-sm));
   }
 }
