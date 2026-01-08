@@ -498,7 +498,8 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
       <div className="stats-yearly">
         <h3>Yearly Summary</h3>
         <div className="stats-yearly-wrapper">
-          <table className="stats-yearly-table">
+          {/* Desktop: horizontal table (years as columns) */}
+          <table className="stats-yearly-table stats-yearly-table--horizontal">
             <thead>
               <tr>
                 <th className="stats-yearly-label">Year</th>
@@ -572,6 +573,64 @@ function Stats({ tracks, artistMap, onPlayTrack }: StatsProps): ReactElement {
                   );
                 })}
               </tr>
+            </tbody>
+          </table>
+          {/* Mobile: vertical table (years as rows) */}
+          <table className="stats-yearly-table stats-yearly-table--vertical">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Tracks</th>
+                <th>Avg Pop</th>
+              </tr>
+            </thead>
+            <tbody>
+              {yearlySummary.map((y) => {
+                // Collect all highlights for this year
+                const yearHighlights = [];
+                if (y.countRank === 1)
+                  yearHighlights.push({ color: cssColors.highlightBusiest, title: 'Most tracks' });
+                if (y.growthRank === 1 && y.growth > 0)
+                  yearHighlights.push({
+                    color: cssColors.highlightGrowth,
+                    title: 'Largest growth',
+                  });
+                if (y.popRank === 1)
+                  yearHighlights.push({ color: cssColors.highlightPopular, title: 'Most popular' });
+                if (y.lowPopRank === 1 && yearlySummary.length > 1)
+                  yearHighlights.push({ color: cssColors.highlightNiche, title: 'Most niche' });
+
+                const yearColor = yearHighlights.length > 0 ? yearHighlights[0].color : undefined;
+
+                // Track highlights
+                const trackHighlights = [];
+                if (y.countRank === 1) trackHighlights.push(cssColors.highlightBusiest);
+                if (y.growthRank === 1 && y.growth > 0)
+                  trackHighlights.push(cssColors.highlightGrowth);
+                const trackBg = trackHighlights[0] ? `${trackHighlights[0]}15` : undefined;
+
+                // Pop highlights
+                const popHighlights = [];
+                if (y.popRank === 1) popHighlights.push(cssColors.highlightPopular);
+                if (y.lowPopRank === 1 && yearlySummary.length > 1)
+                  popHighlights.push(cssColors.highlightNiche);
+                const popBg = popHighlights[0] ? `${popHighlights[0]}15` : undefined;
+
+                return (
+                  <tr key={y.year}>
+                    <td
+                      className="stats-yearly-label"
+                      style={yearColor ? { color: yearColor } : undefined}
+                    >
+                      {y.year}
+                    </td>
+                    <td style={trackBg ? { backgroundColor: trackBg } : undefined}>{y.count}</td>
+                    <td style={popBg ? { backgroundColor: popBg } : undefined}>
+                      {y.avgPopularity}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <div className="stats-yearly-legend">

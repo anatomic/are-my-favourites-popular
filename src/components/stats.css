@@ -286,6 +286,15 @@
   font-size: var(--font-size-sm);
 }
 
+/* Desktop: show horizontal, hide vertical */
+.stats-yearly-table--horizontal {
+  display: table;
+}
+
+.stats-yearly-table--vertical {
+  display: none;
+}
+
 .stats-yearly-table th,
 .stats-yearly-table td {
   padding: var(--space-sm) var(--space-md);
@@ -524,10 +533,39 @@
 
   .stats-section {
     padding: var(--space-md);
+    overflow: hidden;
+  }
+
+  /* Ensure stats list items don't overflow */
+  .stats-list li {
+    min-width: 0;
+  }
+
+  .stats-track {
+    max-width: calc(100% - 50px);
   }
 
   .stats-yearly {
     padding: 0 var(--space-md);
+  }
+
+  .stats-yearly-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Swap to vertical yearly summary table */
+  .stats-yearly-table--horizontal {
+    display: none;
+  }
+
+  .stats-yearly-table--vertical {
+    display: table;
+  }
+
+  .stats-yearly-table--vertical .stats-yearly-label {
+    text-align: center;
+    font-weight: var(--font-weight-medium);
   }
 
   .stats-heatmap {
@@ -542,6 +580,21 @@
     grid-template-columns: repeat(4, 1fr);
     gap: var(--space-md);
   }
+
+  /* Heatmap header - stack on tablet/mobile */
+  .heatmap-header {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .heatmap-header .heatmap-legend {
+    position: static;
+  }
+
+  .stats-heatmap h3 {
+    flex: none;
+  }
 }
 
 @media (max-width: 600px) {
@@ -553,5 +606,41 @@
 @media (max-width: 480px) {
   .heatmap-years-stack {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Heatmap header - stack on mobile */
+  .heatmap-header {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .heatmap-header .heatmap-legend {
+    position: static;
+    order: 1;
+  }
+
+  .stats-heatmap h3 {
+    font-size: var(--font-size-xs);
+    flex: none;
+    width: auto;
+    order: 0;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 360px) {
+  .heatmap-years-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-yearly-wrapper {
+    padding: var(--space-sm);
+  }
+
+  .stats-yearly-table th,
+  .stats-yearly-table td {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
   }
 }

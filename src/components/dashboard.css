@@ -31,10 +31,11 @@
   width: 100%;
 }
 
-/* Chart Info (legend + stats container) */
+/* Chart Info (legend + highlights + stats container) */
 .chart-info {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-lg);
   padding: var(--space-md) 0;
   margin-top: var(--space-sm);
@@ -45,6 +46,7 @@
   width: 1px;
   align-self: stretch;
   background: var(--border-subtle);
+  flex-shrink: 0;
 }
 
 /* Chart Legend */
@@ -54,6 +56,7 @@
   align-items: center;
   gap: var(--space-sm);
   max-width: 180px;
+  flex-shrink: 0;
 }
 
 .chart-legend-gradient {
@@ -61,6 +64,7 @@
   height: 40px;
   border-radius: 2px;
   background: linear-gradient(to top, var(--chart-gradient-low), var(--chart-gradient-high));
+  flex-shrink: 0;
 }
 
 .chart-legend-labels {
@@ -84,6 +88,7 @@
 .chart-highlights {
   display: flex;
   gap: var(--space-md);
+  flex-shrink: 0;
 }
 
 .chart-highlight {
@@ -131,7 +136,9 @@
 /* Chart Stats */
 .chart-stats {
   display: flex;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .chart-stat {
@@ -165,7 +172,31 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* Responsive */
+/* ===========================================
+   RESPONSIVE BREAKPOINTS
+
+   Desktop: > 1024px (default styles above)
+   Tablet:  768px - 1024px
+   Mobile:  < 768px
+   Small:   < 480px
+   =========================================== */
+
+/* Tablet: Allow content to wrap and reflow */
+@media (max-width: 1024px) {
+  .chart-info {
+    justify-content: center;
+  }
+
+  .chart-info-separator {
+    display: none;
+  }
+
+  .chart-stats {
+    gap: var(--space-md);
+  }
+}
+
+/* Smaller Tablet / Large Phone: Stack vertically */
 @media (max-width: 768px) {
   .dashboard {
     padding: var(--space-lg) var(--space-md);
@@ -173,5 +204,121 @@
 
   .dashboard-header h1 {
     font-size: var(--font-size-lg);
+  }
+
+  /* Stack chart-info elements vertically */
+  .chart-info {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+
+  /* Legend: horizontal and compact */
+  .chart-legend {
+    max-width: none;
+    justify-content: center;
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: center;
+  }
+
+  .chart-legend-note {
+    text-align: center;
+    max-width: 300px;
+  }
+
+  /* Highlights: centered row */
+  .chart-highlights {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Stats: centered with wrapping */
+  .chart-stats {
+    justify-content: center;
+    gap: var(--space-lg);
+  }
+}
+
+/* Mobile: Tighter spacing, smaller elements */
+@media (max-width: 480px) {
+  .dashboard {
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  .dashboard-header h1 {
+    font-size: 20px;
+  }
+
+  .dashboard-header .subtitle {
+    font-size: var(--font-size-xs);
+  }
+
+  .chart-info {
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+  }
+
+  /* Smaller highlight thumbnails */
+  .chart-highlights {
+    gap: var(--space-sm);
+  }
+
+  .chart-highlight__img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .chart-highlight__name {
+    max-width: 70px;
+    font-size: 11px;
+  }
+
+  .chart-highlight__label {
+    font-size: 9px;
+  }
+
+  /* Stats: tighter grid */
+  .chart-stats {
+    gap: var(--space-md);
+  }
+
+  .chart-stat-value {
+    font-size: var(--font-size-lg);
+  }
+
+  .chart-stat-label {
+    font-size: 9px;
+  }
+
+  /* Hide verbose legend note on small screens */
+  .chart-legend-note {
+    font-size: 10px;
+    max-width: 260px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+  .dashboard {
+    padding: var(--space-sm);
+  }
+
+  .dashboard-header h1 {
+    font-size: 18px;
+  }
+
+  .chart-highlight__img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .chart-highlight__name {
+    max-width: 60px;
+    font-size: 10px;
+  }
+
+  .chart-stat-value {
+    font-size: var(--font-size-md);
   }
 }

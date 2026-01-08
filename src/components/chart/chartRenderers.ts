@@ -73,13 +73,16 @@ export function renderGridLines(svg: SVGSelection, config: ChartConfig): void {
 
 /**
  * Render X and Y axes
+ * X-axis ticks are responsive - fewer labels on narrower screens
  */
 export function renderAxes(svg: SVGSelection, config: ChartConfig): void {
   const { dimensions, scales } = config;
-  const { height, margins } = dimensions;
+  const { width, height, margins } = dimensions;
   const { x, y } = scales;
 
-  const xAxis = axisBottom(x).ticks(timeYear.every(1));
+  // Responsive tick interval: show fewer year labels on narrow screens
+  const yearInterval = width < 400 ? 3 : width < 600 ? 2 : 1;
+  const xAxis = axisBottom(x).ticks(timeYear.every(yearInterval));
   const yAxis = axisLeft(y).ticks(5);
 
   // X-axis
