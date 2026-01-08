@@ -152,7 +152,7 @@
 }
 
 .chart-stat-value {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   line-height: 1.2;
@@ -276,7 +276,7 @@
 
   /* Stats: tighter grid */
   .chart-stat-value {
-    font-size: var(--font-size-md);
+    font-size: 20px;
   }
 
   .chart-stat-label {
@@ -311,6 +311,6 @@
   }
 
   .chart-stat-value {
-    font-size: var(--font-size-sm);
+    font-size: 16px;
   }
 }
