@@ -30,10 +30,13 @@ export const SPOTIFY_API_BASE = 'https://api.spotify.com/';
 export const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com';
 
 // OAuth scopes required by the application
+// Minimized to only what's actually used:
+// - user-library-read: fetch saved tracks (core functionality)
+// - streaming: Web Playback SDK for in-app player
+// - user-read-playback-state: check current playback
+// - user-modify-playback-state: play/pause/seek/volume control
 export const SPOTIFY_SCOPES = [
-  'user-read-private',
   'user-library-read',
-  'playlist-read-private',
   'streaming',
   'user-read-playback-state',
   'user-modify-playback-state',

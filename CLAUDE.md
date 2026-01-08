@@ -118,7 +118,7 @@ The `CLIENT_ID` is injected via Vite's `define` config (see `vite.config.js`). O
 CLIENT_ID=your_client_id npm run dev
 ```
 
-Required Spotify scopes: `user-read-private`, `user-library-read`, `playlist-read-private`
+Required Spotify scopes: `user-library-read`, `streaming`, `user-read-playback-state`, `user-modify-playback-state`
 
 ## Design System
 
