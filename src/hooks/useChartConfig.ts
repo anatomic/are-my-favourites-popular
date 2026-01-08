@@ -58,6 +58,14 @@ const DEFAULT_MARGINS: ChartMargins = {
   left: 60,
 };
 
+// Mobile margins - reduced left margin since we hide the axis label
+const MOBILE_MARGINS: ChartMargins = {
+  top: 20,
+  right: 10,
+  bottom: 40,
+  left: 35,
+};
+
 // Container measurement constants
 const CHART_ASPECT_RATIO = 0.42; // Height as ratio of width
 const MIN_CHART_HEIGHT = 300;
@@ -138,17 +146,20 @@ export function useContainerSize(
   return size;
 }
 
+// Mobile breakpoint for reduced margins
+const MOBILE_BREAKPOINT = 600;
+
 /**
  * Calculate chart dimensions from container size
+ * Uses reduced margins on mobile for more chart space
  */
-function calculateDimensions(
-  containerWidth: number,
-  containerHeight: number,
-  margins: ChartMargins = DEFAULT_MARGINS
-): ChartDimensions {
+function calculateDimensions(containerWidth: number, containerHeight: number): ChartDimensions {
   // Use actual container width - no cap, let CSS handle max-width if needed
   const width = containerWidth;
   const height = containerHeight;
+
+  // Use mobile margins on small screens
+  const margins = containerWidth <= MOBILE_BREAKPOINT ? MOBILE_MARGINS : DEFAULT_MARGINS;
 
   return {
     width,

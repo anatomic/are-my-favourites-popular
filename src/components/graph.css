@@ -171,3 +171,22 @@
 .data-point--playing {
   animation: pulse 0.8s ease-in-out infinite;
 }
+
+/* ===========================================
+   RESPONSIVE CHART STYLES
+   =========================================== */
+
+/* Mobile: Full-width chart, hide axis label */
+@media (max-width: 600px) {
+  .chart-container {
+    padding: var(--space-sm);
+    margin-left: calc(-1 * var(--space-md));
+    margin-right: calc(-1 * var(--space-md));
+    border-radius: 0;
+  }
+
+  /* Hide y-axis label on mobile - numbers alone are sufficient */
+  .axis-label {
+    display: none;
+  }
+}
