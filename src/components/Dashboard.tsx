@@ -40,7 +40,6 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const animatingRef = useRef(false);
 
   // Responsive chart sizing via ResizeObserver
   const containerSize = useContainerSize(chartContainerRef);
@@ -222,7 +221,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
   }, [playTrack, handleMouseOver, handleMouseOut, chartConfig]);
 
   // Render the D3 chart with modern join() pattern
-  // Only clears on first render; subsequent renders animate changes
+  // D3 transitions handle animation interruption gracefully
   useEffect(() => {
     if (!chartConfig || !svgRef.current) return;
 
@@ -242,26 +241,9 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
     renderGridLines(svg, chartConfig);
     renderAxes(svg, chartConfig);
 
-    // Check if this is the first data render (no circles yet)
-    const container = svg.select('g.data-points-container');
-    const isFirstDataRender = container.empty() || container.selectAll('circle').empty();
-
-    if (isFirstDataRender) {
-      // First render: animate from bottom with stagger
-      animatingRef.current = true;
-      renderDataPoints(svg, chartConfig);
-      // Allow updates after animation completes (600ms transition + 1000ms max stagger)
-      const timeoutId = setTimeout(() => {
-        animatingRef.current = false;
-      }, 1600);
-
-      // Cleanup timeout on unmount or config change
-      return () => clearTimeout(timeoutId);
-    } else if (!animatingRef.current) {
-      // Subsequent renders: smooth transitions (only if not currently animating)
-      renderDataPoints(svg, chartConfig);
-    }
-    // If animating, skip data point update to prevent transition interruption
+    // Always render data points - D3 handles first render vs updates internally
+    // via isFirstRender detection, and transitions gracefully interrupt previous ones
+    renderDataPoints(svg, chartConfig);
   }, [chartConfig]);
 
   return (

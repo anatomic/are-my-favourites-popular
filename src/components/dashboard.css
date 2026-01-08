@@ -35,11 +35,13 @@
 .chart-info {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-lg);
+  gap: var(--space-md);
   padding: var(--space-md) 0;
   margin-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
+  width: 100%;
 }
 
 .chart-info-separator {
@@ -87,7 +89,7 @@
 /* Chart Highlights (top track/artist thumbnails) */
 .chart-highlights {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
@@ -95,7 +97,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 2px;
   text-decoration: none;
   transition: transform var(--transition-fast);
 }
@@ -105,8 +107,8 @@
 }
 
 .chart-highlight__img {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-sm);
   object-fit: cover;
 }
@@ -122,7 +124,7 @@
 .chart-highlight__name {
   font-size: var(--font-size-xs);
   color: var(--text-primary);
-  max-width: 80px;
+  max-width: 72px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -136,7 +138,7 @@
 /* Chart Stats */
 .chart-stats {
   display: flex;
-  gap: var(--space-lg);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -145,13 +147,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
+  min-width: 48px;
 }
 
 .chart-stat-value {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
+  line-height: 1.2;
 }
 
 .chart-stat-value--highlight {
@@ -184,15 +188,11 @@
 /* Tablet: Allow content to wrap and reflow */
 @media (max-width: 1024px) {
   .chart-info {
-    justify-content: center;
+    justify-content: space-evenly;
   }
 
   .chart-info-separator {
     display: none;
-  }
-
-  .chart-stats {
-    gap: var(--space-md);
   }
 }
 
@@ -236,7 +236,7 @@
   /* Stats: centered with wrapping */
   .chart-stats {
     justify-content: center;
-    gap: var(--space-lg);
+    gap: var(--space-md);
   }
 }
 
@@ -260,17 +260,13 @@
   }
 
   /* Smaller highlight thumbnails */
-  .chart-highlights {
-    gap: var(--space-sm);
-  }
-
   .chart-highlight__img {
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
   }
 
   .chart-highlight__name {
-    max-width: 70px;
+    max-width: 64px;
     font-size: 11px;
   }
 
@@ -279,12 +275,8 @@
   }
 
   /* Stats: tighter grid */
-  .chart-stats {
-    gap: var(--space-md);
-  }
-
   .chart-stat-value {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
   }
 
   .chart-stat-label {
@@ -309,16 +301,16 @@
   }
 
   .chart-highlight__img {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
   }
 
   .chart-highlight__name {
-    max-width: 60px;
+    max-width: 56px;
     font-size: 10px;
   }
 
   .chart-stat-value {
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
   }
 }
