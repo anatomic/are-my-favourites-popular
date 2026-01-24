@@ -11,5 +11,8 @@ export {
   renderDataPoints,
   setupDataPointHandlers,
   createTooltipContent,
+  withZoomedScale,
   type DataPointHandlers,
 } from './chartRenderers';
+
+export { ZoomControls } from './ZoomControls';

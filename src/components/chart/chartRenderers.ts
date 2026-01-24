@@ -14,6 +14,7 @@ import { type Selection, select } from 'd3-selection';
 import { transition } from 'd3-transition';
 import { axisBottom, axisLeft } from 'd3-axis';
 import { timeYear } from 'd3-time';
+import type { ScaleTime } from 'd3-scale';
 import type { ChartConfig } from '../../hooks/useChartConfig';
 import type { SavedTrack, SpotifyTrack } from '../../types/spotify';
 import { cssColors } from '../../utils/cssVariables';
@@ -311,4 +312,24 @@ export function createTooltipContent(track: SavedTrack, popColor: string): strin
       <span class="tooltip-value">${addedDate}</span>
     </span>
   `;
+}
+
+/**
+ * Create a modified ChartConfig with a zoomed X scale
+ *
+ * @param config - Base chart configuration
+ * @param zoomedXScale - X scale with zoom transform applied
+ * @returns New ChartConfig with the zoomed scale
+ */
+export function withZoomedScale(
+  config: ChartConfig,
+  zoomedXScale: ScaleTime<number, number>
+): ChartConfig {
+  return {
+    ...config,
+    scales: {
+      ...config.scales,
+      x: zoomedXScale,
+    },
+  };
 }

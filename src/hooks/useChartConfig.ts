@@ -49,6 +49,8 @@ export interface ChartConfig {
   scales: ChartScales;
   sortedTracks: SavedTrack[];
   maxPopularity: number;
+  /** X-axis domain for zoom extent calculations */
+  xDomain: [Date, Date];
 }
 
 const DEFAULT_MARGINS: ChartMargins = {
@@ -220,13 +222,15 @@ export function useChartConfig(
     const maxPopularity = max(sortedTracks, (d: SavedTrack) => d.track.popularity) ?? 0;
 
     // Create scales - start 1 week before first track, end 6 months after today
+    const xStart = new Date((firstDate ?? today).getTime() - ONE_WEEK_MS);
     const xEnd = new Date(
       today.getFullYear(),
       today.getMonth() + X_AXIS_FUTURE_MONTHS,
       today.getDate()
     );
+    const xDomain: [Date, Date] = [xStart, xEnd];
     const x = scaleTime()
-      .domain([new Date((firstDate ?? today).getTime() - ONE_WEEK_MS), xEnd])
+      .domain(xDomain)
       .range([margins.left, width - margins.right]);
 
     const y = scaleLinear()
@@ -244,6 +248,7 @@ export function useChartConfig(
       scales: { x, y, radius, color },
       sortedTracks,
       maxPopularity,
+      xDomain,
     };
   }, [tracks, containerSize]);
 }

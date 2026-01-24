@@ -6,6 +6,7 @@ import Stats from './Stats';
 import Player from './Player';
 import { useSpotifyPlayer } from '../hooks/useSpotifyPlayer';
 import { useChartConfig, useContainerSize } from '../hooks/useChartConfig';
+import { useChartZoom } from '../hooks/useChartZoom';
 import {
   renderGradientDef,
   renderGridLines,
@@ -13,6 +14,8 @@ import {
   renderDataPoints,
   setupDataPointHandlers,
   createTooltipContent,
+  withZoomedScale,
+  ZoomControls,
 } from './chart';
 import type { DashboardProps, SavedTrack, SpotifyArtist, SpotifyTrack } from '../types/spotify';
 import Footer from './Footer';
@@ -46,6 +49,13 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
 
   // Chart configuration (dimensions, scales, sorted data)
   const chartConfig = useChartConfig(tracks, containerSize);
+
+  // Zoom behavior for the chart
+  const { isZoomed, zoomedXScale, resetZoom } = useChartZoom(svgRef, chartConfig);
+
+  // Create zoomed config by applying zoom transform to X scale
+  const zoomedConfig =
+    chartConfig && zoomedXScale ? withZoomedScale(chartConfig, zoomedXScale) : null;
 
   // Calculate chart stats for display
   const chartStats = useMemo((): ChartStats | null => {
@@ -222,8 +232,9 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
 
   // Render the D3 chart with modern join() pattern
   // D3 transitions handle animation interruption gracefully
+  // Uses zoomedConfig to apply zoom transform to data positions
   useEffect(() => {
-    if (!chartConfig || !svgRef.current) return;
+    if (!zoomedConfig || !svgRef.current) return;
 
     const svg = select(svgRef.current);
 
@@ -238,13 +249,13 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
     // Clear and re-render structural elements (axes, grid)
     // These appear instantly without animation
     svg.selectAll('.grid-line, .x-axis, .y-axis, .axis-label').remove();
-    renderGridLines(svg, chartConfig);
-    renderAxes(svg, chartConfig);
+    renderGridLines(svg, zoomedConfig);
+    renderAxes(svg, zoomedConfig);
 
     // Always render data points - D3 handles first render vs updates internally
     // via isFirstRender detection, and transitions gracefully interrupt previous ones
-    renderDataPoints(svg, chartConfig);
-  }, [chartConfig]);
+    renderDataPoints(svg, zoomedConfig);
+  }, [zoomedConfig]);
 
   return (
     <div className="dashboard">
@@ -265,6 +276,7 @@ function Dashboard({ tracks, artistMap, onLogout, getAccessToken }: DashboardPro
               style={{ visibility: chartConfig ? 'visible' : 'hidden' }}
             ></svg>
             <div ref={tooltipRef} className="tooltip"></div>
+            <ZoomControls isZoomed={isZoomed} onReset={resetZoom} />
           </div>
           <div className="chart-info">
             <div className="chart-legend">

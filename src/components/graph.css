@@ -173,6 +173,77 @@
 }
 
 /* ===========================================
+   ZOOM CONTROLS
+   =========================================== */
+
+/* Zoom overlay cursor styles */
+.zoom-overlay {
+  cursor: grab;
+}
+
+.zoom-overlay:active {
+  cursor: grabbing;
+}
+
+/* Zoom controls container */
+.zoom-controls {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  z-index: 10;
+}
+
+/* Reset zoom button - Spotify pill style */
+.zoom-reset-btn {
+  background: var(--surface-highlight);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.zoom-reset-btn:hover {
+  background: var(--spotify-green);
+  border-color: var(--spotify-green);
+  color: var(--spotify-black);
+  transform: scale(1.02);
+}
+
+.zoom-reset-btn:focus-visible {
+  outline: 2px solid var(--spotify-green);
+  outline-offset: 2px;
+}
+
+.zoom-reset-btn:active {
+  transform: scale(0.98);
+}
+
+/* Zoom hint text */
+.zoom-hint {
+  position: absolute;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ===========================================
    RESPONSIVE CHART STYLES
    =========================================== */
 
