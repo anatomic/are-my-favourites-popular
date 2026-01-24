@@ -12,14 +12,12 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom';
+import { zoom as d3Zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
 import { select, type Selection } from 'd3-selection';
 import type { ScaleTime } from 'd3-scale';
 import type { ChartConfig, ChartDimensions } from './useChartConfig';
 
 export interface ZoomState {
-  /** Current d3 zoom transform */
-  transform: ZoomTransform;
   /** Whether currently zoomed (transform !== identity) */
   isZoomed: boolean;
   /** X scale with zoom transform applied */
@@ -34,6 +32,15 @@ interface UseChartZoomOptions {
   /** Maximum zoom level */
   maxZoom?: number;
 }
+
+// Simple transform state that doesn't use d3 objects directly in React state
+interface TransformState {
+  k: number;
+  x: number;
+  y: number;
+}
+
+const IDENTITY_TRANSFORM: TransformState = { k: 1, x: 0, y: 0 };
 
 /**
  * Hook for chart zoom and pan behavior
@@ -50,10 +57,11 @@ export function useChartZoom(
 ): ZoomState {
   const { minZoom = 1, maxZoom = 10 } = options;
 
-  const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity);
-  const [zoomBehavior, setZoomBehavior] = useState<ZoomBehavior<SVGSVGElement, unknown> | null>(
-    null
-  );
+  // Store transform as simple object, not d3 ZoomTransform
+  const [transformState, setTransformState] = useState<TransformState>(IDENTITY_TRANSFORM);
+
+  // Store zoom behavior in ref (doesn't need to trigger re-renders)
+  const zoomBehaviorRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
   // Track if this is the first render to avoid resetting zoom on resize
   const isFirstRender = useRef(true);
@@ -62,18 +70,25 @@ export function useChartZoom(
 
   // Create the zoomed X scale by applying transform to base scale
   const zoomedXScale = chartConfig
-    ? (transform.rescaleX(chartConfig.scales.x) as ScaleTime<number, number>)
+    ? chartConfig.scales.x
+        .copy()
+        .domain(
+          chartConfig.scales.x.domain().map((d) => {
+            // Apply inverse transform to get the new domain
+            return new Date((d.getTime() - transformState.x) / transformState.k);
+          })
+        )
     : null;
 
-  const isZoomed = transform.k !== 1 || transform.x !== 0;
+  const isZoomed = transformState.k !== 1 || transformState.x !== 0;
 
   // Reset zoom to identity transform
   const resetZoom = useCallback(() => {
-    if (!svgRef.current || !zoomBehavior) return;
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
 
     const svg = select(svgRef.current);
-    svg.transition().duration(300).call(zoomBehavior.transform, zoomIdentity);
-  }, [svgRef, zoomBehavior]);
+    svg.transition().duration(300).call(zoomBehaviorRef.current.transform, zoomIdentity);
+  }, [svgRef]);
 
   // Set up zoom behavior
   useEffect(() => {
@@ -94,7 +109,7 @@ export function useChartZoom(
     ];
 
     // Create zoom behavior
-    const zoomBehaviorInstance = zoom<SVGSVGElement, unknown>()
+    const zoomBehaviorInstance = d3Zoom<SVGSVGElement, unknown>()
       .scaleExtent([minZoom, maxZoom])
       .translateExtent(translateExtent)
       .extent([
@@ -116,10 +131,12 @@ export function useChartZoom(
         return true;
       })
       .on('zoom', (event) => {
-        setTransform(event.transform);
+        // Extract simple values from d3 transform to store in state
+        const { k, x, y } = event.transform;
+        setTransformState({ k, x, y });
       });
 
-    setZoomBehavior(zoomBehaviorInstance);
+    zoomBehaviorRef.current = zoomBehaviorInstance;
 
     // Apply zoom behavior to SVG
     const svg = select(svgRef.current);
@@ -132,7 +149,7 @@ export function useChartZoom(
     // Only reset transform on first render or when data changes
     // Preserve zoom state across window resizes
     if (isFirstRender.current || dataChanged) {
-      setTransform(zoomIdentity);
+      setTransformState(IDENTITY_TRANSFORM);
       isFirstRender.current = false;
     }
 
@@ -144,7 +161,6 @@ export function useChartZoom(
   }, [svgRef, chartConfig, minZoom, maxZoom]);
 
   return {
-    transform,
     isZoomed,
     zoomedXScale,
     resetZoom,
