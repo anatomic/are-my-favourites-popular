@@ -9,10 +9,19 @@
  * - Click-drag to pan
  * - Pinch-to-zoom on touch devices
  * - Reset button to return to full view
+ *
+ * Constraints:
+ * - Panning is constrained to keep data visible (can't pan to dates outside data range)
+ * - Trackpad-optimized with reduced sensitivity for smoother control
  */
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { zoom as d3Zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
+import {
+  zoom as d3Zoom,
+  zoomIdentity,
+  type ZoomBehavior,
+  type ZoomTransform,
+} from 'd3-zoom';
 import { select, type Selection } from 'd3-selection';
 import type { ScaleTime } from 'd3-scale';
 import type { ChartConfig, ChartDimensions } from './useChartConfig';
@@ -41,6 +50,9 @@ interface TransformState {
 }
 
 const IDENTITY_TRANSFORM: TransformState = { k: 1, x: 0, y: 0 };
+
+// Wheel delta multiplier for smoother trackpad zoom (lower = more control)
+const WHEEL_DELTA_FACTOR = 0.002;
 
 /**
  * Hook for chart zoom and pan behavior
@@ -102,20 +114,53 @@ export function useChartZoom(
     const dataChanged = prevTrackCount.current !== null && prevTrackCount.current !== trackCount;
     prevTrackCount.current = trackCount;
 
-    // Calculate translate extent to prevent panning beyond data
-    const translateExtent: [[number, number], [number, number]] = [
-      [margins.left, margins.top],
-      [width - margins.right, height - margins.bottom],
-    ];
+    // Chart area bounds in pixel coordinates
+    const chartLeft = margins.left;
+    const chartRight = width - margins.right;
+    const chartWidth = chartRight - chartLeft;
+
+    // Constrain function to keep data visible at all zoom levels
+    // This prevents panning beyond the data bounds
+    const constrainTransform = (
+      transform: ZoomTransform,
+      _extent: [[number, number], [number, number]]
+    ): ZoomTransform => {
+      // Calculate the visible width at current zoom level
+      const visibleWidth = chartWidth / transform.k;
+
+      // Calculate min/max translation to keep data in view
+      // At k=1, x should be 0 (full view)
+      // At k>1, x can range from 0 to -(chartWidth - visibleWidth) * k
+      const maxX = 0;
+      const minX = -(chartWidth - visibleWidth) * transform.k;
+
+      // Constrain x translation
+      const constrainedX = Math.max(minX, Math.min(maxX, transform.x));
+
+      // Return new transform if constrained, otherwise return original
+      if (constrainedX !== transform.x) {
+        return zoomIdentity.translate(constrainedX, transform.y).scale(transform.k);
+      }
+      return transform;
+    };
 
     // Create zoom behavior
     const zoomBehaviorInstance = d3Zoom<SVGSVGElement, unknown>()
       .scaleExtent([minZoom, maxZoom])
-      .translateExtent(translateExtent)
       .extent([
-        [margins.left, margins.top],
-        [width - margins.right, height - margins.bottom],
+        [chartLeft, margins.top],
+        [chartRight, height - margins.bottom],
       ])
+      // Use constrain instead of translateExtent for more precise control
+      .constrain(constrainTransform)
+      // Reduce wheel delta for smoother trackpad zooming
+      .wheelDelta((event: WheelEvent) => {
+        // Default d3 behavior uses -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002)
+        // We use a smaller factor for smoother trackpad control
+        const delta = -event.deltaY * (event.deltaMode === 1 ? 0.05 : WHEEL_DELTA_FACTOR);
+        // Clamp the delta to prevent huge jumps
+        return Math.max(-0.5, Math.min(0.5, delta));
+      })
       .filter((event: Event) => {
         // Allow wheel events (for zooming)
         if (event.type === 'wheel') return true;
